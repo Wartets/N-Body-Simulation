@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Relativity on bodies</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+	<canvas id="simCanvas"></canvas>
+
+	<div id="controlPanel">
+		<div id="panelHeader">
+			<span class="app-title"><i class="fa-solid fa-atom"></i>Parameters</span>
+			<button id="togglePanelBtn"><i class="fa-solid fa-minus"></i></button>
+		</div>
+		
+		<div id="panelContent">
+			
+			<div class="control-section">
+				<div class="section-header">Simulation control</div>
+				<div class="btn-group">
+					<button id="playPauseBtn" class="btn primary">
+						<i class="fa-solid fa-pause"></i> Pause
+					</button>
+					<button id="resetBtn" class="btn danger">
+						<i class="fa-solid fa-rotate-right"></i> Reeset
+					</button>
+				</div>
+				<div class="control-row" style="margin-top: 8px;">
+					<label>Time step dt</label>
+					<span id="dtVal" class="value-display"></span>
+				</div>
+				<input type="range" id="dtSlider" min="0.1" max="5" step="0.1">
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="control-section" id="displaySection">
+				<div class="section-header toggle-header">
+					<span>Display</span>
+					<button id="toggleDisplayBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+				</div>
+				
+				<label class="toggle-row">
+					<span>Tracking Barycentre</span>
+					<input type="checkbox" id="camTrackingBox">
+					<div class="toggle-switch"></div>
+				</label>
+				<label class="toggle-row" style="margin-top:8px;">
+					<span>Auto Zoom</span>
+					<input type="checkbox" id="camAutoZoomBox">
+					<div class="toggle-switch"></div>
+				</label>
+
+				<div class="divider-sub"></div>
+
+				<label class="toggle-row">
+					<span>Show Trails</span>
+					<input type="checkbox" id="showTrailsBox" checked>
+					<div class="toggle-switch"></div>
+				</label>
+
+				<div class="control-row" style="margin-top: 8px;">
+					<label>Trail Length</label>
+					<span id="trailLenVal" class="value-display"></span>
+				</div>
+				<input type="range" id="trailLenSlider" min="10" max="500" step="10">
+
+				<div class="control-row" style="margin-top: 4px;">
+					<label>Trail Skip (Precision)</label>
+					<span id="trailPrecVal" class="value-display"></span>
+				</div>
+				<input type="range" id="trailPrecSlider" min="1" max="10" step="1">
+				
+				<div class="divider-sub"></div>
+
+				<div class="control-row" style="margin-top: 8px;">
+					<label>Grid Precision</label>
+					<span id="gridPrecVal" class="value-display"></span>
+				</div>
+				<input type="range" id="gridPrecSlider" min="1" max="100" step="1">
+
+				<div class="control-row" style="margin-top: 4px;">
+					<label>Spacetime Distortion</label>
+					<span id="gridDistVal" class="value-display"></span>
+				</div>
+				<input type="range" id="gridDistSlider" min="0" max="5" step="0.01">
+
+				<div class="control-row" style="margin-top: 4px;">
+					<label>Min Def. Dist</label>
+					<span id="gridMinDistVal" class="value-display"></span>
+				</div>
+				<input type="range" id="gridMinDistSlider" min="1" max="500" step="1">
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="control-section collapsed-section" id="injectionSection">
+				<div class="section-header toggle-header">
+					<span>Injection parameters</span>
+					<button id="toggleInjectionBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+				</div>
+				
+				<div id="injectionContent">
+					<div class="grid-2-col">
+						<div class="input-wrapper"><label>Mass</label><input type="number" id="newMass"></div>
+						<div class="input-wrapper"><label>Position X</label><input type="number" id="newX"></div>
+						<div class="input-wrapper"><label>Position Y</label><input type="number" id="newY"></div>
+						<div class="input-wrapper"><label>Velocity X</label><input type="number" id="newVX"></div>
+						<div class="input-wrapper"><label>Velocity Y</label><input type="number" id="newVY"></div>
+					</div>
+					
+					<div class="divider-sub"></div>
+					
+					<div class="input-wrapper" style="margin-top:5px;">
+						<button id="randomizeBtn" class="btn secondary"><i class="fa-solid fa-dice"></i> Random</button>
+						<button id="addSolarSystemBtn" class="btn secondary" style="margin-top:5px;"><i class="fa-solid fa-circle-nodes"></i> Kepler preset</button>
+						<button id="addBodyBtn" class="btn action"><i class="fa-solid fa-plus"></i> Inject</button>
+					</div>	
+				</div>
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="control-section">
+				<div class="section-header toggle-header" id="bodiesHeader">
+					<span>Active bodies <span id="bodyCount">0</span></span>
+					<button id="toggleBodiesBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+				</div>
+				<div id="bodiesListContainer">
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	<script src="simulation.js"></script>
+	<script src="rendering.js"></script>
+	<script src="interface.js"></script>
+</body>
+</html>

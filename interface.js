@@ -675,6 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		refreshZoneList();
 		refreshViscosityZoneList();
 		refreshElasticBondList();
+		refreshSolidBarrierList();
 	};
 	
 	window.App.ui = {
@@ -862,7 +863,152 @@ document.addEventListener('DOMContentLoaded', () => {
 			bondsListContainer.appendChild(div);
 		});
 	}
+	
+	const toggleBarrierToolBtn = document.getElementById('toggleBarrierToolBtn');
+	const barriersListContainer = document.getElementById('barriersListContainer');
+	
+	if (toggleBarrierToolBtn) {
+		toggleBarrierToolBtn.addEventListener('click', () => {
+			if (Render.drawMode === 'barrier') {
+				Render.drawMode = 'none';
+				toggleBarrierToolBtn.innerHTML = '<i class="fa-solid fa-road"></i> Draw Barrier (Off)';
+				toggleBarrierToolBtn.classList.remove('primary');
+				toggleBarrierToolBtn.classList.add('secondary');
+				Render.canvas.style.cursor = 'default';
+			} else {
+				Render.drawMode = 'barrier';
+				toggleBarrierToolBtn.innerHTML = '<i class="fa-solid fa-road"></i> Draw Barrier (On)';
+				toggleBarrierToolBtn.classList.remove('secondary');
+				toggleBarrierToolBtn.classList.add('primary');
+				
+				if (toggleBondToolBtn) {
+					toggleBondToolBtn.innerHTML = '<i class="fa-solid fa-link"></i> Link Bodies (Off)';
+					toggleBondToolBtn.classList.remove('primary');
+					toggleBondToolBtn.classList.add('secondary');
+				}
+				if (toggleViscosityZoneBtn) {
+					toggleViscosityZoneBtn.innerHTML = '<i class="fa-solid fa-water"></i> Draw Viscosity (Off)';
+					toggleViscosityZoneBtn.classList.remove('primary');
+					toggleViscosityZoneBtn.classList.add('secondary');
+				}
+				if (toggleZoneDrawBtn) {
+					toggleZoneDrawBtn.innerHTML = '<i class="fa-solid fa-pen-ruler"></i> Draw Zone (Off)';
+					toggleZoneDrawBtn.classList.remove('primary');
+					toggleZoneDrawBtn.classList.add('secondary');
+				}
+				
+				Render.canvas.style.cursor = 'crosshair';
+			}
+		});
+		
+		if (toggleBondToolBtn) {
+			toggleBondToolBtn.addEventListener('click', () => {
+				if (Render.drawMode === 'bond') {
+					toggleBarrierToolBtn.innerHTML = '<i class="fa-solid fa-road"></i> Draw Barrier (Off)';
+					toggleBarrierToolBtn.classList.remove('primary');
+					toggleBarrierToolBtn.classList.add('secondary');
+				}
+			});
+		}
+		if (toggleViscosityZoneBtn) {
+			toggleViscosityZoneBtn.addEventListener('click', () => {
+				if (Render.drawMode === 'viscosity') {
+					toggleBarrierToolBtn.innerHTML = '<i class="fa-solid fa-road"></i> Draw Barrier (Off)';
+					toggleBarrierToolBtn.classList.remove('primary');
+					toggleBarrierToolBtn.classList.add('secondary');
+				}
+			});
+		}
+		if (toggleZoneDrawBtn) {
+			toggleZoneDrawBtn.addEventListener('click', () => {
+				if (Render.drawMode === 'periodic') {
+					toggleBarrierToolBtn.innerHTML = '<i class="fa-solid fa-road"></i> Draw Barrier (Off)';
+					toggleBarrierToolBtn.classList.remove('primary');
+					toggleBarrierToolBtn.classList.add('secondary');
+				}
+			});
+		}
+	}
 
+	function refreshSolidBarrierList() {
+		if (!barriersListContainer) return;
+		barriersListContainer.innerHTML = '';
+		Sim.solidBarriers.forEach((barrier) => {
+			const div = document.createElement('div');
+			div.className = 'zone-card';
+			if (Render.selectedBarrierId === barrier.id) {
+				div.classList.add('active');
+			}
+			
+			div.addEventListener('click', (e) => {
+				if (e.target.tagName !== 'INPUT' && !e.target.closest('button') && !e.target.classList.contains('toggle-switch')) {
+					Render.selectedBarrierId = barrier.id;
+					refreshSolidBarrierList();
+				}
+			});
+
+			div.innerHTML = `
+				<div class="zone-header">
+					<div style="display: flex; align-items: center; gap: 5px;">
+						<input type="color" class="barrier-color" value="${barrier.color || '#8e44ad'}" style="width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;">
+						<input type="text" class="barrier-name" value="${barrier.name}" style="width: 80px;">
+					</div>
+					<div style="display:flex; align-items:center; gap:8px;">
+						<label class="toggle-row" style="margin:0;">
+							<input type="checkbox" class="inp-barrier-enabled" ${barrier.enabled ? 'checked' : ''}>
+							<div class="toggle-switch" style="transform:scale(0.8);"></div>
+						</label>
+						<button class="btn-delete" title="Remove Barrier"><i class="fa-solid fa-trash"></i></button>
+					</div>
+				</div>
+				<div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+					<div class="mini-input-group"><label>X1</label><input type="number" class="inp-bx1" value="${barrier.x1.toFixed(1)}"></div>
+					<div class="mini-input-group"><label>Y1</label><input type="number" class="inp-by1" value="${barrier.y1.toFixed(1)}"></div>
+					<div class="mini-input-group"><label>X2</label><input type="number" class="inp-bx2" value="${barrier.x2.toFixed(1)}"></div>
+					<div class="mini-input-group"><label>Y2</label><input type="number" class="inp-by2" value="${barrier.y2.toFixed(1)}"></div>
+				</div>
+				<div class="mini-input-group" style="margin-top:4px;">
+					<label>Restitution</label>
+					<input type="number" class="inp-brest" value="${barrier.restitution.toFixed(2)}" step="0.05" min="0" max="2">
+				</div>
+			`;
+			
+			div.querySelector('.inp-barrier-enabled').addEventListener('change', (e) => { barrier.enabled = e.target.checked; });
+			div.querySelector('.barrier-color').addEventListener('input', (e) => { barrier.color = e.target.value; });
+			div.querySelector('.barrier-name').addEventListener('change', (e) => { barrier.name = e.target.value; });
+			
+			const inpX1 = div.querySelector('.inp-bx1');
+			const inpY1 = div.querySelector('.inp-by1');
+			const inpX2 = div.querySelector('.inp-bx2');
+			const inpY2 = div.querySelector('.inp-by2');
+			const inpRest = div.querySelector('.inp-brest');
+			
+			const updateBarrier = () => {
+				barrier.x1 = parseFloat(inpX1.value) || 0;
+				barrier.y1 = parseFloat(inpY1.value) || 0;
+				barrier.x2 = parseFloat(inpX2.value) || 0;
+				barrier.y2 = parseFloat(inpY2.value) || 0;
+				barrier.restitution = parseFloat(inpRest.value) || 0.8;
+			};
+			
+			[inpX1, inpY1, inpX2, inpY2, inpRest].forEach(inp => {
+				inp.addEventListener('change', updateBarrier);
+				inp.addEventListener('input', updateBarrier);
+			});
+			
+			div.querySelector('.btn-delete').addEventListener('click', (e) => {
+				e.stopPropagation();
+				Sim.removeSolidBarrier(barrier.id);
+				if (Render.selectedBarrierId === barrier.id) Render.selectedBarrierId = null;
+				refreshSolidBarrierList();
+			});
+
+			barriersListContainer.appendChild(div);
+		});
+	}
+
+	window.App.ui.refreshSolidBarrierList = refreshSolidBarrierList;
+	
 	window.App.ui.refreshElasticBondList = refreshElasticBondList;
 	
 	window.App.ui.refreshViscosityZones = refreshViscosityZoneList;

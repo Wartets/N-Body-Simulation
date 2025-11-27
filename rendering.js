@@ -42,9 +42,11 @@ const Rendering = {
 	selectedZoneId: null,
 	selectedViscosityZoneId: null,
 	selectedBondId: null,
+	selectedBarrierId: null,
 	tempZoneStart: null,
 	tempZoneCurrent: null,
 	tempBondStart: null,
+	tempBarrierStart: null,
 
 	init: function() {
 		this.canvas = document.getElementById('simCanvas');
@@ -99,6 +101,13 @@ const Rendering = {
 			
 			if (this.drawMode === 'periodic' || this.drawMode === 'viscosity') {
 				this.tempZoneStart = { x: m.x, y: m.y };
+				this.tempZoneCurrent = { x: m.x, y: m.y };
+				this.isDragging = true;
+				return;
+			}
+			
+			if (this.drawMode === 'barrier') {
+				this.tempBarrierStart = { x: m.x, y: m.y };
 				this.tempZoneCurrent = { x: m.x, y: m.y };
 				this.isDragging = true;
 				return;
@@ -161,12 +170,14 @@ const Rendering = {
 				this.selectedZoneId = null;
 				this.selectedViscosityZoneId = null;
 				this.selectedBondId = null;
+				this.selectedBarrierId = null;
 				
 				if (window.App.ui) {
 					if (window.App.ui.highlightBody) window.App.ui.highlightBody(-1);
 					if (window.App.ui.refreshZones) window.App.ui.refreshZones();
 					if (window.App.ui.refreshViscosityZones) window.App.ui.refreshViscosityZones();
 					if (window.App.ui.refreshElasticBondList) window.App.ui.refreshElasticBondList();
+					if (window.App.ui.refreshSolidBarrierList) window.App.ui.refreshSolidBarrierList();
 				}
 
 				if (!this.enableTracking) {
@@ -185,6 +196,8 @@ const Rendering = {
 			const bodies = window.App.sim.bodies;
 
 			if ((this.drawMode === 'periodic' || this.drawMode === 'viscosity') && this.tempZoneStart) {
+				this.tempZoneCurrent = { x: m.x, y: m.y };
+			} else if (this.drawMode === 'barrier' && this.tempBarrierStart) {
 				this.tempZoneCurrent = { x: m.x, y: m.y };
 			} else if (this.drawMode === 'bond' && this.tempBondStart !== null) {
 				this.tempZoneCurrent = { x: m.x, y: m.y };
@@ -232,6 +245,17 @@ const Rendering = {
 					}
 				}
 				this.tempZoneStart = null;
+				this.tempZoneCurrent = null;
+				this.isDragging = false;
+				return;
+			}
+			
+			if (this.drawMode === 'barrier' && this.tempBarrierStart && this.tempZoneCurrent) {
+				window.App.sim.addSolidBarrier(this.tempBarrierStart.x, this.tempBarrierStart.y, this.tempZoneCurrent.x, this.tempZoneCurrent.y);
+				if (window.App.ui && window.App.ui.refreshSolidBarrierList) {
+					window.App.ui.refreshSolidBarrierList();
+				}
+				this.tempBarrierStart = null;
 				this.tempZoneCurrent = null;
 				this.isDragging = false;
 				return;
@@ -701,7 +725,33 @@ const Rendering = {
 		
 		this.ctx.setLineDash([]);
 	},
+	
+	drawSolidBarriers: function(barriers) {
+		this.ctx.lineCap = 'round';
+		for (const b of barriers) {
+			const isSelected = (b.id === this.selectedBarrierId);
+			this.ctx.lineWidth = (isSelected ? 5 : 3) / this.zoom;
+			this.ctx.strokeStyle = b.color || '#8e44ad';
+			this.ctx.globalAlpha = b.enabled ? 1.0 : 0.3;
+			
+			this.ctx.beginPath();
+			this.ctx.moveTo(b.x1, b.y1);
+			this.ctx.lineTo(b.x2, b.y2);
+			this.ctx.stroke();
+			
+			this.ctx.globalAlpha = 1.0;
+		}
 
+		if (this.drawMode === 'barrier' && this.tempBarrierStart && this.tempZoneCurrent) {
+			this.ctx.lineWidth = 3 / this.zoom;
+			this.ctx.strokeStyle = '#8e44ad';
+			this.ctx.beginPath();
+			this.ctx.moveTo(this.tempBarrierStart.x, this.tempBarrierStart.y);
+			this.ctx.lineTo(this.tempZoneCurrent.x, this.tempZoneCurrent.y);
+			this.ctx.stroke();
+		}
+	},
+	
 	draw: function() {
 		window.App.sim.update();
 
@@ -724,6 +774,7 @@ const Rendering = {
 		this.drawGrid();
 		this.drawPeriodicZones(window.App.sim.periodicZones);
 		this.drawViscosityZones(window.App.sim.viscosityZones);
+		this.drawSolidBarriers(window.App.sim.solidBarriers);
 		this.drawElasticBonds(window.App.sim.elasticBonds);
 		this.drawFields(window.App.sim.bodies);
 		this.drawBarycenter(window.App.sim.bodies);

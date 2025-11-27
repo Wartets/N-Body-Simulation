@@ -38,6 +38,7 @@ const Simulation = {
 	periodicZones: [],
 	viscosityZones: [],
 	elasticBonds: [],
+	solidBarriers: [],
 	G: 0.5,
 	c: 50.0,
 	Ke: 10.0,
@@ -67,6 +68,7 @@ const Simulation = {
 		this.periodicZones = [];
 		this.viscosityZones = [];
 		this.elasticBonds = [];
+		this.solidBarriers = [];
 	},
 	
 	addBody: function(m, x, y, vx, vy, col, name, ax = 0, ay = 0,
@@ -155,6 +157,24 @@ const Simulation = {
 
 	removeElasticBond: function(id) {
 		this.elasticBonds = this.elasticBonds.filter(b => b.id !== id);
+	},
+	
+	addSolidBarrier: function(x1, y1, x2, y2, restitution, color, name) {
+		this.solidBarriers.push({
+			id: Date.now() + Math.random(),
+			name: name || `Wall ${this.solidBarriers.length + 1}`,
+			x1: x1,
+			y1: y1,
+			x2: x2,
+			y2: y2,
+			restitution: restitution || 0.8,
+			color: color || '#8e44ad',
+			enabled: true
+		});
+	},
+
+	removeSolidBarrier: function(id) {
+		this.solidBarriers = this.solidBarriers.filter(b => b.id !== id);
 	},
 	
 	createSolarSystem: function() {
@@ -467,6 +487,53 @@ const Simulation = {
 			b.x += b.vx * dt;
 			b.y += b.vy * dt;
 			
+			if (this.enableCollision) {
+				for (const barrier of this.solidBarriers) {
+					if (!barrier.enabled) continue;
+					
+					const bx1 = barrier.x1;
+					const by1 = barrier.y1;
+					const bx2 = barrier.x2;
+					const by2 = barrier.y2;
+					
+					const segX = bx2 - bx1;
+					const segY = by2 - by1;
+					const segLenSq = segX*segX + segY*segY;
+					
+					if (segLenSq === 0) continue;
+					
+					const dot = ((b.x - bx1) * segX + (b.y - by1) * segY) / segLenSq;
+					const t = Math.max(0, Math.min(1, dot));
+					
+					const closestX = bx1 + t * segX;
+					const closestY = by1 + t * segY;
+					
+					const distX = b.x - closestX;
+					const distY = b.y - closestY;
+					const distSq = distX*distX + distY*distY;
+					const dist = Math.sqrt(distSq);
+					
+					if (dist < b.radius) {
+						const nx = distX / dist;
+						const ny = distY / dist;
+						
+						const overlap = b.radius - dist;
+						b.x += nx * overlap;
+						b.y += ny * overlap;
+						
+						const vn = b.vx * nx + b.vy * ny;
+						
+						if (vn < 0) {
+							const e = Math.min(b.restitution, barrier.restitution);
+							const j = -(1 + e) * vn;
+							
+							b.vx += j * nx;
+							b.vy += j * ny;
+						}
+					}
+				}
+			}
+			
 			for (const z of this.periodicZones) {
 				if (!z.enabled) continue;
 
@@ -716,6 +783,45 @@ const Simulation = {
 				b.x += b.vx * dt;
 				b.y += b.vy * dt;
 				
+				if (this.enableCollision) {
+					for (const barrier of this.solidBarriers) {
+						if (!barrier.enabled) continue;
+						const bx1 = barrier.x1;
+						const by1 = barrier.y1;
+						const bx2 = barrier.x2;
+						const by2 = barrier.y2;
+						
+						const segX = bx2 - bx1;
+						const segY = by2 - by1;
+						const segLenSq = segX*segX + segY*segY;
+						if (segLenSq === 0) continue;
+						
+						const dot = ((b.x - bx1) * segX + (b.y - by1) * segY) / segLenSq;
+						const t = Math.max(0, Math.min(1, dot));
+						
+						const closestX = bx1 + t * segX;
+						const closestY = by1 + t * segY;
+						const distX = b.x - closestX;
+						const distY = b.y - closestY;
+						const dist = Math.sqrt(distX*distX + distY*distY);
+						
+						if (dist < b.radius) {
+							const nx = distX / dist;
+							const ny = distY / dist;
+							const overlap = b.radius - dist;
+							b.x += nx * overlap;
+							b.y += ny * overlap;
+							const vn = b.vx * nx + b.vy * ny;
+							if (vn < 0) {
+								const e = Math.min(b.restitution, barrier.restitution);
+								const j = -(1 + e) * vn;
+								b.vx += j * nx;
+								b.vy += j * ny;
+							}
+						}
+					}
+				}
+
 				if (b.rotationSpeed !== 0 && typeof b.angle === 'undefined') {
 					b.angle = 0;
 				}

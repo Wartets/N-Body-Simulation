@@ -1338,6 +1338,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (window.App.presets[idx]) {
 				Sim.reset();
 				window.App.presets[idx].init(Sim);
+				
+				const updateCheck = (id, val) => {
+					const el = document.getElementById(id);
+					if(el) el.checked = val;
+				};
+				updateCheck('gravBox', Sim.enableGravity);
+				updateCheck('elecBox', Sim.enableElectricity);
+				updateCheck('magBox', Sim.enableMagnetism);
+				updateCheck('colBox', Sim.enableCollision);
+
 				refreshBodyList();
 				refreshZoneList();
 				refreshViscosityZoneList();

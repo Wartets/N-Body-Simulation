@@ -140,43 +140,6 @@ window.App.presets = [
         }
     },
     {
-        name: "Newton's Cradle",
-        init: function(sim) {
-            sim.bodies = [];
-            sim.elasticBonds = [];
-            sim.enableGravity = true; 
-            sim.enableCollision = true;
-            
-            const pivotY = -300;
-            const startX = -120;
-            const gap = 60;
-            const stringLen = 300;
-            
-            for(let i=0; i<5; i++) {
-                const bx = startX + i * gap;
-                const by = pivotY; 
-                
-                sim.addBody(1e9, bx, by, 0, 0, '#444', 'Pivot', 0, 0, 0, 0, 0); 
-                const pivotIdx = sim.bodies.length - 1;
-                sim.bodies[pivotIdx].lifetime = -1; 
-                
-                let ballX = bx;
-                let ballY = pivotY + stringLen;
-                
-                if (i === 0) {
-                    ballX -= 180;
-                    ballY -= 60;
-                }
-                
-                sim.addBody(50, ballX, ballY, 0, 0, '#e74c3c', 'Ball');
-                const ballIdx = sim.bodies.length - 1;
-                sim.bodies[ballIdx].restitution = 1.0;
-                
-                sim.addElasticBond(pivotIdx, ballIdx, 50, stringLen, 0.1, '#fff', 'String');
-            }
-        }
-    },
-    {
         name: "Lattice Structure",
         init: function(sim) {
             sim.bodies = [];
@@ -186,7 +149,7 @@ window.App.presets = [
             
             const rows = 5;
             const cols = 5;
-            const spacing = 60;
+            const spacing = 80;
             const startX = -(cols * spacing) / 2;
             const startY = -(rows * spacing) / 2;
             

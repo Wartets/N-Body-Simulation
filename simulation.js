@@ -231,35 +231,60 @@ const Simulation = {
 			return { func: () => 0, error: null };
 		}
 		
-		const sanitized = formula
-			.replace(/sin/g, 'Math.sin')
-			.replace(/cos/g, 'Math.cos')
-			.replace(/tan/g, 'Math.tan')
-			.replace(/log/g, 'Math.log')
-			.replace(/pow/g, 'Math.pow')
-			.replace(/abs/g, 'Math.abs')
-			.replace(/sqrt/g, 'Math.sqrt')
-			.replace(/PI/g, 'vars.PI') 
-			.replace(/E/g, 'vars.E'); 
+		let code = formula.trim();
 		
-		const allowedVars = ['x', 'y', 'G', 'c', 'Ke', 'Km', 't', 'PI', 'E']; 
+		code = code.replace(/\^/g, '**');
+		code = code.replace(/\bpi\b/g, 'PI');
+		code = code.replace(/\bln\b/g, 'log');
+		
+		const mathProps = Object.getOwnPropertyNames(Math);
+		const reservedVars = ['Ke', 'Km', 'PI', 'E'];
+		const allReserved = [...mathProps, ...reservedVars].sort((a, b) => b.length - a.length);
+		
+		const tokens = [];
+		const mask = (val) => {
+			const id = `_TOKEN_${tokens.length}_`;
+			tokens.push(val);
+			return id;
+		};
+		
+		allReserved.forEach(word => {
+			if (word.length > 1 || word === 'E') {
+				const regex = new RegExp(`\\b${word}\\b`, 'g');
+				code = code.replace(regex, () => mask(word));
+			}
+		});
+		
+		code = code.replace(/([)\]])\s*([(\[])/g, '$1*$2');
+		
+		code = code.replace(/([a-zA-Z0-9)\]_])\s+(?=[a-zA-Z0-9(\[_])/g, '$1*');
+		
+		tokens.forEach((val, i) => {
+			code = code.split(`_TOKEN_${i}_`).join(val);
+		});
 		
 		try {
-			const code = `
+			const mathKeys = Object.getOwnPropertyNames(Math).filter(k => k !== 'PI' && k !== 'E').join(',');
+			const varsKeys = "x, y, G, c, Ke, Km, t";
+			
+			const funcBody = `
 				"use strict";
-				const { x, y, G, c, Ke, Km, t, PI, E } = vars;
-				return (${sanitized});
+				const { ${mathKeys}, PI, E } = Math;
+				const { ${varsKeys} } = vars;
+				return (${code});
 			`;
-			const func = new Function('vars', code);
-
-			const testVars = { x: 1, y: 1, G: this.G, c: this.c, Ke: this.Ke, Km: this.Km, t: 0, PI: Math.PI, E: Math.E };
+			
+			const func = new Function('vars', funcBody);
+			
+			const testVars = { x: 1, y: 1, G: 1, c: 1, Ke: 1, Km: 1, t: 0 };
 			const result = func(testVars);
+			
 			if (typeof result !== 'number' || isNaN(result)) {
-				return { func: () => 0, error: "Formula must return a number." };
+				return { func: () => 0, error: "Result is not a number" };
 			}
 			
 			return { func: func, error: null };
-
+			
 		} catch (e) {
 			return { func: () => 0, error: e.message };
 		}
@@ -457,6 +482,24 @@ const Simulation = {
 						if (b2.mass !== -1) {
 							const torque = (r2x * -jty - r2y * -jtx);
 							b2.rotationSpeed += torque * i2;
+						}
+
+						const correctionPercent = 0.8;
+						const slop = 0.01;
+						const totalInvMass = m1 + m2;
+						if (totalInvMass > 0) {
+							const correctionMag = Math.max(0, overlap - slop) / totalInvMass * correctionPercent;
+							const cx = correctionMag * nx;
+							const cy = correctionMag * ny;
+
+							if (b1.mass !== -1) {
+								b1.x -= cx * m1;
+								b1.y -= cy * m1;
+							}
+							if (b2.mass !== -1) {
+								b2.x += cx * m2;
+								b2.y += cy * m2;
+							}
 						}
 					}
 				}
@@ -849,6 +892,24 @@ const Simulation = {
 							if (b2.mass !== -1) {
 								const torque = (r2x * -jty - r2y * -jtx);
 								b2.rotationSpeed += torque * i2;
+							}
+							
+							const correctionPercent = 0.8;
+							const slop = 0.01;
+							const totalInvMass = m1 + m2;
+							if (totalInvMass > 0) {
+								const correctionMag = Math.max(0, overlap - slop) / totalInvMass * correctionPercent;
+								const cx = correctionMag * nx;
+								const cy = correctionMag * ny;
+
+								if (b1.mass !== -1) {
+									b1.x -= cx * m1;
+									b1.y -= cy * m1;
+								}
+								if (b2.mass !== -1) {
+									b2.x += cx * m2;
+									b2.y += cy * m2;
+								}
 							}
 						}
 					}

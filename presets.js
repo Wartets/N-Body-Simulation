@@ -277,7 +277,7 @@ window.App.presets = [
             
             const w = 600;
             const h = 400;
-            sim.addPeriodicZone(-w/2, -h/2, w, h, '#e67e22', 'radius');
+            sim.addPeriodicZone(-w/2, -h/2, w, h, '#e67e22', 'center');
             
             for(let i=0; i<80; i++) {
                 sim.addBody(
@@ -286,10 +286,10 @@ window.App.presets = [
                     (Math.random() - 0.5) * (h - 20), 
                     (Math.random() - 0.5) * 8, 
                     (Math.random() - 0.5) * 8, 
-                    3,
+                    5,
                     `hsl(${Math.random() * 60 + 200}, 80%, 60%)`, 
                     `Mol ${i}`,
-                    0, 0, 0, 0, 1.0
+                    0, 0, 0, 0, 0.2
                 );
             }
         }

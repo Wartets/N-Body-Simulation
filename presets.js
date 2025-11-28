@@ -585,5 +585,142 @@ window.App.presets = [
 			
 			sim.addFieldZone(-1000, -1000, 2000, 2000, 0, 0.1, 'rgba(10, 200, 20, 0.8)', 'Gravity Field');
         }
-    }
+    },
+	{
+		name: "Figure-8 Orbit",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.periodicZones = [];
+			sim.enableGravity = true;
+			sim.enableCollision = false;
+			sim.enableElectricity = false;
+
+			const m = 1000;
+			const scale = 200;
+			const vScale = Math.sqrt((sim.G * m) / scale);
+			
+			const p1x = 0.97000436 * scale;
+			const p1y = -0.24308753 * scale;
+			const v3x = 0.93240737 * vScale;
+			const v3y = 0.86473146 * vScale;
+			const v1x = -0.5 * v3x;
+			const v1y = -0.5 * v3y;
+
+			sim.addBody(m, p1x, p1y, v1x, v1y, 10, '#3498db', 'Body 1');
+			sim.addBody(m, -p1x, -p1y, v1x, v1y, 10, '#e74c3c', 'Body 2');
+			sim.addBody(m, 0, 0, v3x, v3y, 10, '#f1c40f', 'Body 3');
+		}
+	},
+	{
+		name: "Quadrupole Trap",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.periodicZones = [];
+			sim.enableGravity = false;
+			sim.enableCollision = true;
+			sim.enableElectricity = true;
+
+			const dist = 250;
+			const q = 4000;
+			const r = 20;
+
+			sim.addBody(-1, dist, dist, 0, 0, r, '#e74c3c', 'Fix +', 0, 0, q);
+			sim.addBody(-1, -dist, -dist, 0, 0, r, '#e74c3c', 'Fix +', 0, 0, q);
+			sim.addBody(-1, -dist, dist, 0, 0, r, '#3498db', 'Fix -', 0, 0, -q);
+			sim.addBody(-1, dist, -dist, 0, 0, r, '#3498db', 'Fix -', 0, 0, -q);
+
+			for(let i=0; i<70; i++) {
+				const bx = (Math.random() - 0.5) * 200;
+				const by = (Math.random() - 0.5) * 200;
+				const vx = (Math.random() - 0.5) * 2;
+				const vy = (Math.random() - 0.5) * 2;
+				sim.addBody(1, bx, by, vx, vy, 2, '#fff', 'Ion', 0, 0, 10);
+			}
+		}
+	},
+	{
+		name: "Spiral Galaxy",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.periodicZones = [];
+			sim.enableGravity = true;
+			sim.enableCollision = false;
+
+			const bhMass = 50000;
+			sim.addBody(bhMass, 0, 0, 0, 0, 8, '#fff', 'Black Hole');
+
+			const stars = 60;
+			const arms = 3;
+			const armOffset = Math.PI * 2 / arms;
+
+			for(let i=0; i<stars; i++) {
+				const dist = 100 + Math.random() * 450;
+				const arm = i % arms;
+				const angle = arm * armOffset + (dist / 100) + (Math.random()-0.5)*0.5;
+				
+				const speed = Math.sqrt(sim.G * bhMass / dist);
+				const x = Math.cos(angle) * dist;
+				const y = Math.sin(angle) * dist;
+				const vx = -Math.sin(angle) * speed;
+				const vy = Math.cos(angle) * speed;
+
+				const hue = 200 + Math.random() * 60;
+				const color = `hsl(${hue}, 80%, 70%)`;
+				sim.addBody(Math.random()*3+1, x, y, vx, vy, Math.random()*2+1, color, 'Star');
+			}
+		}
+	},
+	{
+		name: "Lagrange Points L4/L5",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.periodicZones = [];
+			sim.enableGravity = true;
+			sim.enableCollision = false;
+
+			const M1 = 10000; 
+			const M2 = 300;   
+			const R = 300;
+			
+			const centerMass = M1 + M2;
+			const angularVel = Math.sqrt(sim.G * centerMass / (R*R*R));
+			
+			const x1 = -R * (M2 / centerMass);
+			const x2 = R * (M1 / centerMass);
+			
+			const vy1 = x1 * angularVel;
+			const vy2 = x2 * angularVel;
+
+			sim.addBody(M1, x1, 0, 0, vy1, 20, '#f1c40f', 'Sun');
+			sim.addBody(M2, x2, 0, 0, vy2, 10, '#3498db', 'Planet');
+
+			const l4x = x1 + R * Math.cos(Math.PI/3);
+			const l4y = R * Math.sin(Math.PI/3);
+			const l5x = x1 + R * Math.cos(-Math.PI/3);
+			const l5y = R * Math.sin(-Math.PI/3);
+
+			const createTrojans = (cx, cy, label) => {
+				for(let i=0; i<25; i++) {
+					const angle = Math.atan2(cy, cx);
+					const d = Math.sqrt(cx*cx + cy*cy);
+					const vel = d * angularVel;
+					
+					const vX = -Math.sin(angle) * vel;
+					const vY = Math.cos(angle) * vel;
+					
+					const offX = (Math.random()-0.5) * 17;
+					const offY = (Math.random()-0.5) * 17;
+					
+					sim.addBody(0.01, cx+offX, cy+offY, vX + (Math.random()-0.5)*0.4, vY + (Math.random()-0.5)*0.4, 0.2, '#95a5a6', label);
+				}
+			};
+
+			createTrojans(l4x, l4y, 'L4 Trojan');
+			createTrojans(l5x, l5y, 'L5 Trojan');
+		}
+	}
 ];

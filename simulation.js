@@ -43,7 +43,7 @@ const Simulation = {
 	c: 50.0,
 	Ke: 10.0,
 	Km: 5.0,
-	dt: 0.5,
+	dt: 0.25,
 	paused: true,
 	maxRadius: 0,
 	

@@ -38,6 +38,7 @@ body, html {
 	user-select: none;
 	-webkit-user-select: none;
 	-webkit-tap-highlight-color: transparent;
+	touch-action: none;
 }
 
 canvas {
@@ -114,6 +115,7 @@ canvas {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
+	touch-action: pan-y;
 }
 
 #panelContent::-webkit-scrollbar, #toolsContent::-webkit-scrollbar {
@@ -588,6 +590,10 @@ input[type=range]::-moz-range-thumb {
 	width: 100px;
 }
 .zone-name:focus { outline: none; border-bottom: 1px solid var(--accent); }
+
+button, input, select, label, .btn, .toggle-row {
+	touch-action: manipulation;
+}
 
 @media (max-width: 850px) {
 	body, html {

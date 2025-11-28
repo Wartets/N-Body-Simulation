@@ -1855,6 +1855,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		toggleFieldDefBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
 	}
 	
+	document.addEventListener('dblclick', (e) => {
+		e.preventDefault();
+	}, { passive: false });
+	
 	bindRange('dtSlider', 'dtVal', Sim, 'dt', true, 2);
 	bindRange('trailLenSlider', 'trailLenVal', Sim, 'trailLength');
 	bindRange('trailPrecSlider', 'trailPrecVal', Sim, 'trailStep');

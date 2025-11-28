@@ -5,7 +5,7 @@ window.App = {
 };
 
 class Body {
-	constructor(mass, x, y, vx, vy, color, name, startAx = 0, startAy = 0, 
+	constructor(mass, x, y, vx, vy, radius, color, name, startAx = 0, startAy = 0, 
 				charge = 0, magMoment = 0, restitution = 1.0, 
 				lifetime = -1, temperature = 0, rotationSpeed = 0, youngModulus = 0) {
 		this.mass = mass;
@@ -17,7 +17,7 @@ class Body {
 		this.ay = 0;
 		this.startAx = startAx;
 		this.startAy = startAy;
-		this.radius = Math.max(2, Math.log(mass) * 2);
+		this.radius = radius > 0 ? radius : Math.max(2, Math.log(mass) * 2);
 		this.color = color || `hsl(${Math.random() * 360}, 70%, 60%)`;
 		this.path = [];
 		this.name = name || "Body";
@@ -73,11 +73,11 @@ const Simulation = {
 		this.formulaFields = [];
 	},
 	
-	addBody: function(m, x, y, vx, vy, col, name, ax = 0, ay = 0,
+	addBody: function(m, x, y, vx, vy, radius, col, name, ax = 0, ay = 0,
 					 charge = 0, magMoment = 0, restitution = 1.0, 
 					 lifetime = -1, temperature = 0, rotationSpeed = 0, youngModulus = 0) {
 		const newName = name || `Body ${this.bodies.length + 1}`;
-		const newBody = new Body(m, x, y, vx, vy, col, newName, ax, ay,
+		const newBody = new Body(m, x, y, vx, vy, radius, col, newName, ax, ay,
 								  charge, magMoment, restitution, 
 								  lifetime, temperature, rotationSpeed, youngModulus);
 		newBody.startAx = ax;
@@ -1088,7 +1088,6 @@ const Simulation = {
 		for (let b of this.bodies) {
 			if (b.mass !== -1) {
 				b.mass = avg;
-				b.radius = Math.max(2, Math.log(avg) * 2);
 			}
 		}
 	},

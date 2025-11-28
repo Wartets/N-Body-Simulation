@@ -275,20 +275,19 @@ document.addEventListener('DOMContentLoaded', () => {
 			<div class="card-grid">
 				<div class="mini-input-group"><label>Mass</label><input type="number" class="inp-mass" value="${Math.round(body.mass)}" step="10"></div>
 				<div class="mini-input-group"><label>Radius</label><input type="number" class="inp-radius" value="${body.radius.toFixed(1)}" step="0.5"></div>
-				<div class="mini-input-group"><label>Pos X</label><input type="number" class="inp-x" value="${body.x.toFixed(1)}"></div>
-				<div class="mini-input-group"><label>Pos Y</label><input type="number" class="inp-y" value="${body.y.toFixed(1)}"></div>
-				<div class="mini-input-group"><label>Vel X</label><input type="number" class="inp-vx" value="${body.vx.toFixed(2)}" step="0.1"></div>
-				<div class="mini-input-group"><label>Vel Y</label><input type="number" class="inp-vy" value="${body.vy.toFixed(2)}" step="0.1"></div>
+				<div class="mini-input-group"><label>Restitution</label><input type="number" class="inp-restitution" value="${body.restitution.toFixed(2)}" min="0" max="1" step="0.01"></div>
+				<div class="mini-input-group"><label>Position X</label><input type="number" class="inp-x" value="${body.x.toFixed(1)}"></div>
+				<div class="mini-input-group"><label>Position Y</label><input type="number" class="inp-y" value="${body.y.toFixed(1)}"></div>
+				<div class="mini-input-group"><label>Charge (e)</label><input type="number" class="inp-charge" value="${body.charge.toFixed(2)}" step="0.1"></div>
+				<div class="mini-input-group"><label>Velocity X</label><input type="number" class="inp-vx" value="${body.vx.toFixed(2)}" step="0.1"></div>
+				<div class="mini-input-group"><label>Velocity Y</label><input type="number" class="inp-vy" value="${body.vy.toFixed(2)}" step="0.1"></div>
+				<div class="mini-input-group"><label>Mag Moment</label><input type="number" class="inp-magMoment" value="${body.magMoment.toFixed(2)}" step="0.1"></div>
 				<div class="mini-input-group"><label>Start Acc X</label><input type="number" class="inp-start-ax" value="${body.startAx.toFixed(3)}" step="0.01"></div>
 				<div class="mini-input-group"><label>Start Acc Y</label><input type="number" class="inp-start-ay" value="${body.startAy.toFixed(3)}" step="0.01"></div>
-
-				<div class="mini-input-group"><label>Charge (e)</label><input type="number" class="inp-charge" value="${body.charge.toFixed(2)}" step="0.1"></div>
-				<div class="mini-input-group"><label>Mag Moment</label><input type="number" class="inp-magMoment" value="${body.magMoment.toFixed(2)}" step="0.1"></div>
-				<div class="mini-input-group"><label>Restitution</label><input type="number" class="inp-restitution" value="${body.restitution.toFixed(2)}" min="0" max="1" step="0.01"></div>
-				<div class="mini-input-group"><label>Lifetime</label><input type="number" class="inp-lifetime" value="${body.lifetime}" min="-1" step="1"></div>
-				<div class="mini-input-group"><label>Temp</label><input type="number" class="inp-temp" value="${body.temperature.toFixed(0)}" step="1"></div>
-				<div class="mini-input-group"><label>Rotation</label><input type="number" class="inp-rotSpeed" value="${body.rotationSpeed.toFixed(2)}" step="0.01"></div>
+				<div class="mini-input-group"><label>Rotation Speed</label><input type="number" class="inp-rotSpeed" value="${body.rotationSpeed.toFixed(2)}" step="0.01"></div>
+				<div class="mini-input-group"><label>Temperature</label><input type="number" class="inp-temp" value="${body.temperature.toFixed(0)}" step="1"></div>
 				<div class="mini-input-group"><label>Young's Mod.</label><input type="number" class="inp-youngMod" value="${body.youngModulus.toFixed(0)}" step="1"></div>
+				<div class="mini-input-group"><label>Lifetime</label><input type="number" class="inp-lifetime" value="${body.lifetime}" min="-1" step="1"></div>
 			</div>
 		`;
 
@@ -1372,6 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		if (!onlyKinematics) {
 			const mass = setDefault ? 2000 : Math.floor(Math.random() * 800) + 100;
+			const radius = Math.max(2, Math.log(mass) * 2);
 			const charge = parseFloat(((Math.random() - 0.5) * 10).toFixed(2));
 			const magMoment = parseFloat(((Math.random() - 0.5) * 20).toFixed(2));
 			const restitution = parseFloat((Math.random() * 0.2).toFixed(3));
@@ -1380,6 +1380,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			const youngModulus = Math.floor(Math.random() * 1000) + 100;
 
 			document.getElementById('newMass').value = formatVal(mass, 2);
+			document.getElementById('newRadius').value = formatVal(radius, 2);
 			document.getElementById('newCharge').value = formatVal(charge, 2);
 			document.getElementById('newMagMoment').value = formatVal(magMoment, 2);
 			document.getElementById('newRestitution').value = formatVal(restitution, 2);
@@ -1402,90 +1403,124 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		const rnd = (min, max) => min + Math.random() * (max - min);
 		const rndInt = (min, max) => Math.floor(rnd(min, max));
+		const logRad = (m) => Math.max(2, Math.log(m) * 2);
 
 		const presets = {
-			"Star: Red Giant": (S) => ({
-				mass: rnd(60000, 90000) / (S.G * 2),
-				charge: rnd(-5, 5),
-				magMoment: rnd(50, 150),
-				restitution: 0.2,
-				temperature: rndInt(3000, 4500),
-				youngModulus: rnd(100, 500),
-				rotationSpeed: rnd(0.001, 0.005),
-				color: `hsl(${rndInt(0, 20)}, 100%, 60%)`
-			}),
-			"Star: Yellow Dwarf (Sun)": (S) => ({
-				mass: rnd(20000, 30000) / (S.G * 2),
-				charge: 0,
-				magMoment: rnd(10, 50),
-				restitution: 0.5,
-				temperature: rndInt(5500, 6000),
-				youngModulus: rnd(1000, 2000),
-				rotationSpeed: rnd(0.01, 0.03),
-				color: `hsl(${rndInt(45, 60)}, 100%, 70%)`
-			}),
-			"Star: White Dwarf": (S) => ({
-				mass: rnd(15000, 25000) / (S.G * 2),
-				charge: rnd(0, 10),
-				magMoment: rnd(100, 300),
-				restitution: 0.9,
-				temperature: rndInt(15000, 30000),
-				youngModulus: rnd(50000, 80000),
-				rotationSpeed: rnd(0.1, 0.5),
-				color: `hsl(${rndInt(190, 220)}, 50%, 90%)`
-			}),
-			"Star: Neutron": (S) => ({
-				mass: rnd(35000, 50000) / (S.G * 2),
-				charge: rnd(50, 100) / Math.sqrt(S.Ke),
-				magMoment: rnd(2000, 5000) / Math.sqrt(S.Km),
-				restitution: 0.95,
-				temperature: rndInt(500000, 1000000),
-				youngModulus: 200000,
-				rotationSpeed: rnd(2.0, 5.0),
-				color: '#ffffff'
-			}),
-			"Black Hole (Simulated)": (S) => ({
-				mass: rnd(150000, 300000) / (S.G * 2),
-				charge: 0,
-				magMoment: 0,
-				restitution: 0,
-				temperature: 0,
-				youngModulus: 1000000,
-				rotationSpeed: rnd(1.0, 10.0),
-				color: '#000000'
-			}),
-			"Planet: Gas Giant": (S) => ({
-				mass: rnd(1000, 2500) / (S.G * 2),
-				charge: rnd(-2, 2),
-				magMoment: rnd(20, 80),
-				restitution: 0.7,
-				temperature: rndInt(100, 160),
-				youngModulus: rnd(100, 300),
-				rotationSpeed: rnd(0.05, 0.15),
-				color: `hsl(${rndInt(25, 45)}, 80%, ${rndInt(50, 70)}%)`
-			}),
-			"Planet: Rocky (Habitable)": (S) => ({
-				mass: rnd(80, 150) / (S.G * 2),
-				charge: 0,
-				magMoment: rnd(2, 10),
-				restitution: 0.5,
-				temperature: rndInt(250, 320),
-				youngModulus: rnd(3000, 6000),
-				rotationSpeed: rnd(0.1, 0.3),
-				color: `hsl(${rndInt(100, 140)}, 60%, 50%)`
-			}),
-			"Planet: Molten": (S) => ({
-				mass: rnd(60, 120) / (S.G * 2),
-				charge: rnd(0, 5),
-				magMoment: rnd(1, 5),
-				restitution: 0.3,
-				temperature: rndInt(800, 1500),
-				youngModulus: rnd(1000, 2000),
-				rotationSpeed: rnd(0.05, 0.1),
-				color: `hsl(${rndInt(0, 20)}, 80%, 40%)`
-			}),
+			"Star: Red Giant": (S) => {
+				const m = rnd(60000, 90000) / (S.G * 2);
+				return {
+					mass: m,
+					radius: logRad(m) * 3,
+					charge: rnd(-5, 5),
+					magMoment: rnd(50, 150),
+					restitution: 0.2,
+					temperature: rndInt(3000, 4500),
+					youngModulus: rnd(100, 500),
+					rotationSpeed: rnd(0.001, 0.005),
+					color: `hsl(${rndInt(0, 20)}, 100%, 60%)`
+				};
+			},
+			"Star: Yellow Dwarf (Sun)": (S) => {
+				const m = rnd(20000, 30000) / (S.G * 2);
+				return {
+					mass: m,
+					radius: logRad(m),
+					charge: 0,
+					magMoment: rnd(10, 50),
+					restitution: 0.5,
+					temperature: rndInt(5500, 6000),
+					youngModulus: rnd(1000, 2000),
+					rotationSpeed: rnd(0.01, 0.03),
+					color: `hsl(${rndInt(45, 60)}, 100%, 70%)`
+				};
+			},
+			"Star: White Dwarf": (S) => {
+				const m = rnd(15000, 25000) / (S.G * 2);
+				return {
+					mass: m,
+					radius: logRad(m) * 0.5,
+					charge: rnd(0, 10),
+					magMoment: rnd(100, 300),
+					restitution: 0.9,
+					temperature: rndInt(15000, 30000),
+					youngModulus: rnd(50000, 80000),
+					rotationSpeed: rnd(0.1, 0.5),
+					color: `hsl(${rndInt(190, 220)}, 50%, 90%)`
+				};
+			},
+			"Star: Neutron": (S) => {
+				const m = rnd(35000, 50000) / (S.G * 2);
+				return {
+					mass: m,
+					radius: 4,
+					charge: rnd(50, 100) / Math.sqrt(S.Ke),
+					magMoment: rnd(2000, 5000) / Math.sqrt(S.Km),
+					restitution: 0.95,
+					temperature: rndInt(500000, 1000000),
+					youngModulus: 200000,
+					rotationSpeed: rnd(2.0, 5.0),
+					color: '#ffffff'
+				};
+			},
+			"Black Hole (Simulated)": (S) => {
+				const m = rnd(150000, 300000) / (S.G * 2);
+				return {
+					mass: m,
+					radius: 2,
+					charge: 0,
+					magMoment: 0,
+					restitution: 0,
+					temperature: 0,
+					youngModulus: 1000000,
+					rotationSpeed: rnd(1.0, 10.0),
+					color: '#000000'
+				};
+			},
+			"Planet: Gas Giant": (S) => {
+				const m = rnd(1000, 2500) / (S.G * 2);
+				return {
+					mass: m,
+					radius: logRad(m) * 1.2,
+					charge: rnd(-2, 2),
+					magMoment: rnd(20, 80),
+					restitution: 0.7,
+					temperature: rndInt(100, 160),
+					youngModulus: rnd(100, 300),
+					rotationSpeed: rnd(0.05, 0.15),
+					color: `hsl(${rndInt(25, 45)}, 80%, ${rndInt(50, 70)}%)`
+				};
+			},
+			"Planet: Rocky (Habitable)": (S) => {
+				const m = rnd(80, 150) / (S.G * 2);
+				return {
+					mass: m,
+					radius: logRad(m),
+					charge: 0,
+					magMoment: rnd(2, 10),
+					restitution: 0.5,
+					temperature: rndInt(250, 320),
+					youngModulus: rnd(3000, 6000),
+					rotationSpeed: rnd(0.1, 0.3),
+					color: `hsl(${rndInt(100, 140)}, 60%, 50%)`
+				};
+			},
+			"Planet: Molten": (S) => {
+				const m = rnd(60, 120) / (S.G * 2);
+				return {
+					mass: m,
+					radius: logRad(m),
+					charge: rnd(0, 5),
+					magMoment: rnd(1, 5),
+					restitution: 0.3,
+					temperature: rndInt(800, 1500),
+					youngModulus: rnd(1000, 2000),
+					rotationSpeed: rnd(0.05, 0.1),
+					color: `hsl(${rndInt(0, 20)}, 80%, 40%)`
+				};
+			},
 			"Particle: Electron": (S) => ({
 				mass: 0.5,
+				radius: 2,
 				charge: -20 / Math.sqrt(S.Ke),
 				magMoment: 5 / Math.sqrt(S.Km),
 				restitution: 1.0,
@@ -1496,6 +1531,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}),
 			"Particle: Proton": (S) => ({
 				mass: 50,
+				radius: 4,
 				charge: 20 / Math.sqrt(S.Ke),
 				magMoment: 2 / Math.sqrt(S.Km),
 				restitution: 1.0,
@@ -1506,6 +1542,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}),
 			"Particle: Neutron": (S) => ({
 				mass: 50.1,
+				radius: 4,
 				charge: 0,
 				magMoment: -3 / Math.sqrt(S.Km),
 				restitution: 1.0,
@@ -1516,6 +1553,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}),
 			"Ball: Billiard": (S) => ({
 				mass: 10,
+				radius: 5,
 				charge: 0,
 				magMoment: 0,
 				restitution: 0.98,
@@ -1526,6 +1564,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}),
 			"Ball: Pétanque": (S) => ({
 				mass: 40,
+				radius: 5,
 				charge: 0,
 				magMoment: rnd(0, 0.5),
 				restitution: 0.25,
@@ -1536,6 +1575,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}),
 			"Ball: Tennis": (S) => ({
 				mass: 3,
+				radius: 4,
 				charge: rnd(0, 2),
 				magMoment: 0,
 				restitution: 0.85,
@@ -1546,6 +1586,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}),
 			"Object: Soap Bubble": (S) => ({
 				mass: 0.1,
+				radius: 10,
 				charge: rnd(1, 3),
 				magMoment: 0,
 				restitution: 0.8,
@@ -1556,6 +1597,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}),
 			"Object: Magnet": (S) => ({
 				mass: 25,
+				radius: 6,
 				charge: 0,
 				magMoment: rnd(80, 120) / Math.sqrt(S.Km),
 				restitution: 0.5,
@@ -1579,6 +1621,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				const params = presets[key](Sim);
 				
 				document.getElementById('newMass').value = formatVal(params.mass, 2);
+				document.getElementById('newRadius').value = formatVal(params.radius, 2);
 				document.getElementById('newCharge').value = formatVal(params.charge, 2);
 				document.getElementById('newMagMoment').value = formatVal(params.magMoment, 2);
 				document.getElementById('newRestitution').value = formatVal(params.restitution, 2);
@@ -1594,7 +1637,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		});
 
-		const inputIds = ['newMass', 'newX', 'newY', 'newVX', 'newVY', 'newAX', 'newAY', 
+		const inputIds = ['newMass', 'newRadius', 'newX', 'newY', 'newVX', 'newVY', 'newAX', 'newAY', 
 			'newCharge', 'newMagMoment', 'newRestitution', 'newLifetime', 
 			'newTemperature', 'newRotationSpeed', 'newYoungModulus'];
 		
@@ -1657,6 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const y = parseFloat(document.getElementById('newY').value);
 		const vx = parseFloat(document.getElementById('newVX').value);
 		const vy = parseFloat(document.getElementById('newVY').value);
+		const radius = parseFloat(document.getElementById('newRadius').value);
 		const ax = parseFloat(document.getElementById('newAX').value) || 0;
 		const ay = parseFloat(document.getElementById('newAY').value) || 0;
 		
@@ -1670,7 +1714,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		
 		const presetColor = document.getElementById('presetSelect').dataset.color || null;
 
-		Sim.addBody(m, x, y, vx, vy, presetColor, null, ax, ay, 
+		Sim.addBody(m, x, y, vx, vy, radius, presetColor, null, ax, ay, 
 					charge, magMoment, restitution, 
 					lifetime, temperature, rotationSpeed, youngModulus);
 	};

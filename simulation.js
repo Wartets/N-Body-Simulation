@@ -73,9 +73,7 @@ const Simulation = {
 		this.formulaFields = [];
 	},
 	
-	addBody: function(m, x, y, vx, vy, radius, col, name, ax = 0, ay = 0,
-					 charge = 0, magMoment = 0, restitution = 1.0, 
-					 lifetime = -1, temperature = 0, rotationSpeed = 0, youngModulus = 0) {
+	addBody: function(m, x, y, vx, vy, radius, col, name, ax = 0, ay = 0, charge = 0, magMoment = 0, restitution = 1.0, lifetime = -1, temperature = 0, rotationSpeed = 0, youngModulus = 0) {
 		const newName = name || `Body ${this.bodies.length + 1}`;
 		const newBody = new Body(m, x, y, vx, vy, radius, col, newName, ax, ay,
 								  charge, magMoment, restitution, 
@@ -400,6 +398,17 @@ const Simulation = {
 				forceMag = bond.stiffness * displacement;
 			}
 			
+			const invM1 = b1.mass === -1 ? 0 : 1.0 / b1.mass;
+			const invM2 = b2.mass === -1 ? 0 : 1.0 / b2.mass;
+			const totalInvMass = invM1 + invM2;
+			
+			if (totalInvMass > 0 && dt > 0) {
+				const maxForce = (Math.abs(displacement) * 0.8) / (totalInvMass * dt * dt);
+				if (Math.abs(forceMag) > maxForce) {
+					forceMag = Math.sign(forceMag) * maxForce;
+				}
+			}
+			
 			if (bond.breakTension > 0 && forceMag > bond.breakTension) {
 				this.elasticBonds.splice(i, 1);
 				continue;
@@ -411,7 +420,15 @@ const Simulation = {
 			const dvx = b2.vx - b1.vx;
 			const dvy = b2.vy - b1.vy;
 			const relVel = dvx * nx + dvy * ny;
-			const dampForce = bond.damping * relVel;
+			
+			let dampForce = bond.damping * relVel;
+			
+			if (totalInvMass > 0 && dt > 0) {
+				const maxDamp = Math.abs(relVel) / (totalInvMass * dt);
+				if (Math.abs(dampForce) > maxDamp) {
+					dampForce = Math.sign(dampForce) * maxDamp;
+				}
+			}
 
 			const totalForce = forceMag + dampForce;
 			
@@ -419,12 +436,12 @@ const Simulation = {
 			const fy = totalForce * ny;
 
 			if (b1.mass !== -1) {
-				b1.ax += fx / b1.mass;
-				b1.ay += fy / b1.mass;
+				b1.ax += fx * invM1;
+				b1.ay += fy * invM1;
 			}
 			if (b2.mass !== -1) {
-				b2.ax -= fx / b2.mass;
-				b2.ay -= fy / b2.mass;
+				b2.ax -= fx * invM2;
+				b2.ay -= fy * invM2;
 			}
 		}
 
@@ -831,6 +848,17 @@ const Simulation = {
 				} else {
 					forceMag = bond.stiffness * displacement;
 				}
+				
+				const invM1 = b1.mass === -1 ? 0 : 1.0 / b1.mass;
+				const invM2 = b2.mass === -1 ? 0 : 1.0 / b2.mass;
+				const totalInvMass = invM1 + invM2;
+				
+				if (totalInvMass > 0 && dt > 0) {
+					const maxForce = (Math.abs(displacement) * 0.8) / (totalInvMass * dt * dt);
+					if (Math.abs(forceMag) > maxForce) {
+						forceMag = Math.sign(forceMag) * maxForce;
+					}
+				}
 
 				const nx = dx / dist;
 				const ny = dy / dist;
@@ -838,19 +866,28 @@ const Simulation = {
 				const dvx = b2.vx - b1.vx;
 				const dvy = b2.vy - b1.vy;
 				const relVel = dvx * nx + dvy * ny;
-				const dampForce = bond.damping * relVel;
+				
+				let dampForce = bond.damping * relVel;
+				
+				if (totalInvMass > 0 && dt > 0) {
+					const maxDamp = Math.abs(relVel) / (totalInvMass * dt);
+					if (Math.abs(dampForce) > maxDamp) {
+						dampForce = Math.sign(dampForce) * maxDamp;
+					}
+				}
+
 				const totalForce = forceMag + dampForce;
 				
 				const fx = totalForce * nx;
 				const fy = totalForce * ny;
 
 				if (b1.mass !== -1) {
-					b1.ax += fx / b1.mass;
-					b1.ay += fy / b1.mass;
+					b1.ax += fx * invM1;
+					b1.ay += fy * invM1;
 				}
 				if (b2.mass !== -1) {
-					b2.ax -= fx / b2.mass;
-					b2.ay -= fy / b2.mass;
+					b2.ax -= fx * invM2;
+					b2.ay -= fy * invM2;
 				}
 			}
 

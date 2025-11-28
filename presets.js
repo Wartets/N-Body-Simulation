@@ -157,12 +157,12 @@ window.App.presets = [
             sim.enableCollision = true;
             sim.enableElectricity = false;
             
-            sim.addFieldZone(-350, -350, 700, 650, 0, 0.3, 'rgba(46, 204, 113, 0.15)', 'Gravity Field');
+            sim.addFieldZone(-350, -500, 700, 800, 0, 0.3, 'rgba(46, 204, 113, 0.8)', 'Gravity Field');
             
             sim.addSolidBarrier(-350, 300, 350, 300, 0.8, '#e74c3c', 'Floor');
             sim.addSolidBarrier(-350, -300, -350, 300, 0.8, '#c0392b', 'Wall L');
             sim.addSolidBarrier(350, -300, 350, 300, 0.8, '#c0392b', 'Wall R');
-            sim.addSolidBarrier(-200, 100, 200, 200, 1.1, '#8e44ad', 'Bouncer');
+            sim.addSolidBarrier(-200, 100, 200, 200, 0.7, '#8e44ad', 'Bouncer');
 
             for (let i = 0; i < 4; i++) {
                 const m = 20 + Math.random() * 30;
@@ -335,6 +335,255 @@ window.App.presets = [
                     0, 0, -5, 0
                 );
             }
+        }
+    },
+	{
+		name: "Newton's Cradle",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.enableGravity = false;
+			sim.enableCollision = true;
+
+			const balls = 5;
+			const radius = 20;
+			const spacing = radius * 2 + 0.1;
+			const stringLen = 200;
+			const startX = -((balls - 1) * spacing) / 2;
+			const y = 100;
+
+			for (let i = 0; i < balls; i++) {
+				const x = startX + i * spacing;
+				
+				sim.addBody(-1, x, y - stringLen, 0, 0, 1, '#555', 'Anchor');
+				
+				let bx = x;
+				let by = y;
+				let vx = 0;
+				
+				if (i === 0) {
+					bx = x - Math.sqrt(2)*100;
+					by = y - Math.sqrt(2)*100;
+				}
+				
+				sim.addBody(5, bx, by, vx, 0, radius, '#ccc', `Ball ${i}`, 0.5, 0, 0, 0, 1500);
+				
+				sim.addElasticBond(i*2, i*2+1, {
+					type: 'chain',
+					stiffness: 100,
+					damping: 5000,
+					length: stringLen,
+					color: '#fff'
+				});
+			}
+			sim.addFieldZone(-600, -300, 1200, 700, 0, 1, 'rgba(10, 200, 20, 0.8)', 'Gravity Field');
+		}
+	},
+	{
+		name: "Soft Body Jelly",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.enableGravity = false;
+			sim.enableCollision = true;
+
+			const rows = 6;
+			const cols = 6;
+			const spacing = 120;
+			const startX = -(cols * spacing) / 2;
+			const startY = -500;
+
+			const getIdx = (r, c) => r * cols + c;
+
+			for(let r=0; r<rows; r++) {
+				for(let c=0; c<cols; c++) {
+					sim.addBody(20, startX + c*spacing, startY + r*spacing, 0, 0, 8, '#e74c3c', 'Node', 0, 0, 0, 0, 0.5);
+				}
+			}
+
+			const k = 2000;
+			const d = 5000;
+
+			for(let r=0; r<rows; r++) {
+				for(let c=0; c<cols; c++) {
+					const idx = getIdx(r, c);
+					if (c < cols - 1) sim.addElasticBond(idx, getIdx(r, c+1), k, spacing, d);
+					if (r < rows - 1) sim.addElasticBond(idx, getIdx(r+1, c), k, spacing, d);
+					if (c < cols - 1 && r < rows - 1) {
+						sim.addElasticBond(idx, getIdx(r+1, c+1), k, spacing * 1.414, d);
+						sim.addElasticBond(getIdx(r, c+1), getIdx(r+1, c), k, spacing * 1.414, d);
+					}
+				}
+			}
+		}
+	},
+	{
+		name: "Muscle Crawler",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.enableGravity = false;
+			sim.enableCollision = true;
+
+			const groundY = 200;
+			sim.addSolidBarrier(-600, groundY, 600, groundY, 0.5, '#fff', 'Floor');
+			sim.addSolidBarrier(-600, groundY+1, 600, groundY, 0.5, '#fff', 'Floor 2');
+
+			const segments = 6;
+			const spacing = 40;
+			const startX = -100;
+			const y = groundY - 30;
+
+			for(let i=0; i<segments; i++) {
+				sim.addBody(10, startX + i*spacing, y, 0, 0, 10, '#f1c40f', `Node ${i}`);
+				
+				if (i > 0) {
+					sim.addElasticBond(i-1, i, {
+						stiffness: 500,
+						damping: 200,
+						length: spacing,
+						type: 'spring'
+					});
+					
+					if (i > 1) {
+						sim.addElasticBond(i-2, i, {
+							stiffness: 50,
+							damping: 10,
+							length: spacing * 1.8,
+							type: 'spring',
+							activeAmp: 0.2,
+							activeFreq: 10*15.0 + i * 2, 
+							color: '#e74c3c',
+							name: 'Muscle'
+						});
+					}
+				}
+				
+				sim.addBody(5, startX + i*spacing, y + 25, 0, 0, 5, '#888', `Foot ${i}`);
+				sim.addElasticBond(i*2, i*2+1, { stiffness: 80, damping: 2, length: 25 });
+				if (i > 0) {
+					sim.addElasticBond((i-1)*2+1, i*2+1, { stiffness: 5, damping: 5, length: spacing });
+				}
+			}
+			
+			sim.addFieldZone(-600, -300, 1200, 700, 0, 1, 'rgba(10, 200, 20, 0.8)', 'Gravity Field');
+		}
+	},
+	{
+		name: "Breakable Tower",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+			sim.enableGravity = false;
+			sim.enableCollision = true;
+
+			sim.addSolidBarrier(-600, 300, 600, 300, 0.5, '#fff', 'Floor');
+
+			const rows = 10;
+			const cols = 4;
+			const w = 40;
+			const h = 40;
+			const startX = 100;
+			const startY = 280;
+
+			const getIdx = (r, c) => r * cols + c;
+
+			for(let r=0; r<rows; r++) {
+				for(let c=0; c<cols; c++) {
+					const fixed = (r === 0);
+					sim.addBody(fixed ? -1 : 10, startX + c*w, startY - r*h, 0, 0, 5, '#ecf0f1', 'Brick');
+				}
+			}
+
+			for(let r=0; r<rows; r++) {
+				for(let c=0; c<cols; c++) {
+					const idx = getIdx(r, c);
+					const config = { stiffness: 200, damping: 2, breakTension: 150, color: '#95a5a6' };
+					
+					if (c < cols - 1) sim.addElasticBond(idx, getIdx(r, c+1), { ...config, length: w });
+					if (r < rows - 1) sim.addElasticBond(idx, getIdx(r+1, c), { ...config, length: h });
+					if (c < cols - 1 && r < rows - 1) {
+						sim.addElasticBond(idx, getIdx(r+1, c+1), { ...config, length: Math.sqrt(w*w+h*h), stiffness: 100 });
+						sim.addElasticBond(getIdx(r, c+1), getIdx(r+1, c), { ...config, length: Math.sqrt(w*w+h*h), stiffness: 100 });
+					}
+				}
+			}
+
+			sim.addBody(300, -300, 0, 30, 0, 25, '#2c3e50', 'Wrecking Ball');
+			
+			sim.addFieldZone(-600, -300, 1200, 700, 0, 0.1, 'rgba(10, 200, 20, 0.8)', 'Gravity Field');
+		}
+	},
+	{
+		name: "Cloth Simulation",
+		init: function(sim) {
+			sim.bodies = [];
+			sim.elasticBonds = [];
+            sim.enableGravity = false;
+            sim.enableCollision = false;
+
+			const rows = 8;
+			const cols = 7;
+			const spacing = 30;
+			const startX = -(cols * spacing) / 2;
+			const startY = -200;
+
+			const getIdx = (r, c) => r * cols + c;
+
+			for(let r=0; r<rows; r++) {
+				for(let c=0; c<cols; c++) {
+					const fixed = (r === 0); 
+					sim.addBody(fixed ? -1 : 2, startX + c*spacing, startY + r*spacing, 0, 0, 3, '#fff', 'Node');
+				}
+			}
+
+			const config = { stiffness: 400, damping: 5, type: 'rope', color: 'rgba(255,255,255,0.3)' };
+
+			for(let r=0; r<rows; r++) {
+				for(let c=0; c<cols; c++) {
+					const idx = getIdx(r, c);
+					if (c < cols - 1) sim.addElasticBond(idx, getIdx(r, c+1), { ...config, length: spacing });
+					if (r < rows - 1) sim.addElasticBond(idx, getIdx(r+1, c), { ...config, length: spacing });
+				}
+			}
+			
+			sim.addFieldZone(-150, -270, 320, 350, 0, 0.1, 'rgba(10, 200, 20, 0.8)', 'Gravity Field');
+		}
+	},
+    {
+        name: "Chain Link",
+        init: function(sim) {
+            sim.bodies = [];
+            sim.elasticBonds = [];
+            sim.enableGravity = false;
+            sim.enableCollision = false;
+            
+            const segments = 15;
+            const len = 30;
+            
+            sim.addBody(-1, 0, -250, 0, 0, 10, '#fff', 'Anchor');
+            
+            for(let i=1; i<=segments; i++) {
+                sim.addBody(5, i * 5, -250 + i * len, 0, 0, 5, '#bdc3c7', `Link ${i}`);
+                sim.addElasticBond(i-1, i, {
+                    type: 'chain',
+                    length: len,
+                    stiffness: 800,
+                    damping: 2,
+                    nonLinearity: 1.5,
+                    color: '#7f8c8d'
+                });
+            }
+            
+            sim.addBody(50, segments * 5, -250 + (segments + 1) * len, 0, 0, 20, '#e67e22', 'Weight');
+            sim.addElasticBond(segments, segments + 1, {
+                type: 'chain',
+                length: len,
+                stiffness: 800,
+                damping: 200
+            });
+			
+			sim.addFieldZone(-1000, -1000, 2000, 2000, 0, 0.1, 'rgba(10, 200, 20, 0.8)', 'Gravity Field');
         }
     }
 ];

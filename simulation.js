@@ -1044,6 +1044,53 @@ const Simulation = {
 			b.path = [];
 		}
 	},
+	
+	cullDistant: function(minX, maxX, minY, maxY) {
+		this.bodies = this.bodies.filter(b => {
+			return b.x >= minX && b.x <= maxX && b.y >= minY && b.y <= maxY;
+		});
+	},
+
+	snapToGrid: function(gridSize) {
+		for (let b of this.bodies) {
+			b.x = Math.round(b.x / gridSize) * gridSize;
+			b.y = Math.round(b.y / gridSize) * gridSize;
+			b.path = [];
+		}
+	},
+
+	killRotation: function() {
+		for (let b of this.bodies) {
+			b.rotationSpeed = 0;
+		}
+	},
+
+	scatterPositions: function(minX, minY, width, height) {
+		for (let b of this.bodies) {
+			b.x = minX + Math.random() * width;
+			b.y = minY + Math.random() * height;
+			b.path = [];
+		}
+	},
+
+	equalizeMasses: function() {
+		let totalMass = 0;
+		let count = 0;
+		for (let b of this.bodies) {
+			if (b.mass !== -1) {
+				totalMass += b.mass;
+				count++;
+			}
+		}
+		if (count === 0) return;
+		const avg = totalMass / count;
+		for (let b of this.bodies) {
+			if (b.mass !== -1) {
+				b.mass = avg;
+				b.radius = Math.max(2, Math.log(avg) * 2);
+			}
+		}
+	},
 };
 
 window.App.sim = Simulation;

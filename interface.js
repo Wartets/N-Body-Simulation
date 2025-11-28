@@ -130,6 +130,47 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 
+	document.getElementById('cullBtn').addEventListener('click', () => {
+		const z = Render.zoom;
+		const w = Render.width;
+		const h = Render.height;
+		
+		const minX = (-w / 2 - Render.camX) / z;
+		const maxX = (w / 2 - Render.camX) / z;
+		const minY = (-h / 2 - Render.camY) / z;
+		const maxY = (h / 2 - Render.camY) / z;
+
+		Sim.cullDistant(minX, maxX, minY, maxY);
+		refreshBodyList();
+	});
+
+	document.getElementById('snapBtn').addEventListener('click', () => {
+		Sim.snapToGrid(50);
+		if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs();
+	});
+
+	document.getElementById('killRotBtn').addEventListener('click', () => {
+		Sim.killRotation();
+		if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs();
+	});
+
+	document.getElementById('scatterBtn').addEventListener('click', () => {
+		const zoom = Render.zoom;
+		const w = Render.width / zoom;
+		const h = Render.height / zoom;
+		const x = -Render.camX / zoom - w/2;
+		const y = -Render.camY / zoom - h/2;
+		
+		Sim.scatterPositions(x + w*0.1, y + h*0.1, w*0.8, h*0.8);
+		if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs();
+	});
+
+	document.getElementById('equalMassBtn').addEventListener('click', () => {
+		Sim.equalizeMasses();
+		refreshBodyList();
+		if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs();
+	});
+
 	const toggleInjBtn = document.getElementById('toggleInjectionBtn');
 	const injContent = document.getElementById('injectionContent');
 	toggleInjBtn.addEventListener('click', () => {

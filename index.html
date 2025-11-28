@@ -277,13 +277,31 @@
 		<div id="toolsContent">
 			<div class="control-section">
 				<div class="section-header">Global Actions</div>
-				<button id="zeroVelBtn" class="btn primary">
-					<i class="fa-solid fa-stop"></i> Zero Velocities
-				</button>
-				<button id="reverseVelBtn" class="btn primary" style="margin-top: 5px;">
-					<i class="fa-solid fa-backward"></i> Reverse Time
-				</button>
+				<div class="grid-2-col">
+					<button id="zeroVelBtn" class="btn secondary" title="Set all velocities to zero">
+						<i class="fa-solid fa-stop"></i> Stop
+					</button>
+					<button id="reverseVelBtn" class="btn secondary" title="Reverse time flow">
+						<i class="fa-solid fa-backward"></i> Reverse
+					</button>
+					<button id="killRotBtn" class="btn secondary" title="Reset angular velocity to zero">
+						<i class="fa-solid fa-arrows-spin"></i> No Spin
+					</button>
+					<button id="snapBtn" class="btn secondary" title="Align bodies to grid (50px)">
+						<i class="fa-solid fa-border-all"></i> Snap
+					</button>
+					<button id="scatterBtn" class="btn secondary" title="Randomize positions in view">
+						<i class="fa-solid fa-shuffle"></i> Scatter
+					</button>
+					<button id="equalMassBtn" class="btn secondary" title="Set all masses to average">
+						<i class="fa-solid fa-scale-balanced"></i> Equalize
+					</button>
+					<button id="cullBtn" class="btn danger" style="grid-column: span 3;" title="Remove all bodies outside the current camera view">
+						<i class="fa-solid fa-trash-can"></i> Cull Outside View
+					</button>
+				</div>
 			</div>
+			
 			<div class="control-section">
 				<div class="section-header">Periodic Zones</div>
 				<button id="toggleZoneDrawBtn" class="btn secondary">

@@ -99,7 +99,7 @@ const Rendering = {
 			const m = getMouseWorldPos(e.clientX, e.clientY);
 			const bodies = window.App.sim.bodies;
 			
-			if (this.drawMode === 'periodic' || this.drawMode === 'viscosity') {
+			if (this.drawMode === 'periodic' || this.drawMode === 'viscosity' || this.drawMode === 'field') {
 				this.tempZoneStart = { x: m.x, y: m.y };
 				this.tempZoneCurrent = { x: m.x, y: m.y };
 				this.isDragging = true;
@@ -169,6 +169,7 @@ const Rendering = {
 				this.selectedBodyIdx = -1;
 				this.selectedZoneId = null;
 				this.selectedViscosityZoneId = null;
+				this.selectedFieldZoneId = null;
 				this.selectedBondId = null;
 				this.selectedBarrierId = null;
 				
@@ -176,6 +177,7 @@ const Rendering = {
 					if (window.App.ui.highlightBody) window.App.ui.highlightBody(-1);
 					if (window.App.ui.refreshZones) window.App.ui.refreshZones();
 					if (window.App.ui.refreshViscosityZones) window.App.ui.refreshViscosityZones();
+					if (window.App.ui.refreshFieldZones) window.App.ui.refreshFieldZones();
 					if (window.App.ui.refreshElasticBondList) window.App.ui.refreshElasticBondList();
 					if (window.App.ui.refreshSolidBarrierList) window.App.ui.refreshSolidBarrierList();
 				}
@@ -195,7 +197,7 @@ const Rendering = {
 			const m = getMouseWorldPos(e.clientX, e.clientY);
 			const bodies = window.App.sim.bodies;
 
-			if ((this.drawMode === 'periodic' || this.drawMode === 'viscosity') && this.tempZoneStart) {
+			if ((this.drawMode === 'periodic' || this.drawMode === 'viscosity' || this.drawMode === 'field') && this.tempZoneStart) {
 				this.tempZoneCurrent = { x: m.x, y: m.y };
 			} else if (this.drawMode === 'barrier' && this.tempBarrierStart) {
 				this.tempZoneCurrent = { x: m.x, y: m.y };
@@ -225,7 +227,7 @@ const Rendering = {
 		});
 
 		window.addEventListener('mouseup', (e) => {
-			if ((this.drawMode === 'periodic' || this.drawMode === 'viscosity') && this.tempZoneStart && this.tempZoneCurrent) {
+			if ((this.drawMode === 'periodic' || this.drawMode === 'viscosity' || this.drawMode === 'field') && this.tempZoneStart && this.tempZoneCurrent) {
 				const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
 				const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
 				const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
@@ -234,14 +236,13 @@ const Rendering = {
 				if (w > 5 && h > 5) {
 					if (this.drawMode === 'periodic') {
 						window.App.sim.addPeriodicZone(x, y, w, h);
-						if (window.App.ui && window.App.ui.refreshZones) {
-							window.App.ui.refreshZones();
-						}
+						if (window.App.ui && window.App.ui.refreshZones) window.App.ui.refreshZones();
 					} else if (this.drawMode === 'viscosity') {
 						window.App.sim.addViscosityZone(x, y, w, h);
-						if (window.App.ui && window.App.ui.refreshViscosityZones) {
-							window.App.ui.refreshViscosityZones();
-						}
+						if (window.App.ui && window.App.ui.refreshViscosityZones) window.App.ui.refreshViscosityZones();
+					} else if (this.drawMode === 'field') {
+						window.App.sim.addFieldZone(x, y, w, h);
+						if (window.App.ui && window.App.ui.refreshFieldZones) window.App.ui.refreshFieldZones();
 					}
 				}
 				this.tempZoneStart = null;
@@ -752,6 +753,80 @@ const Rendering = {
 		}
 	},
 	
+	drawFieldZones: function(zones) {
+		this.ctx.lineWidth = 1 / this.zoom;
+		
+		for (const z of zones) {
+			const isSelected = (z.id === this.selectedFieldZoneId);
+			const color = z.color || '#27ae60';
+
+			this.ctx.save();
+			if (!z.enabled) {
+				this.ctx.globalAlpha = 0.3;
+			}
+
+			this.ctx.strokeStyle = color;
+			
+			if (isSelected) {
+				this.ctx.lineWidth = 3 / this.zoom;
+				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
+				this.ctx.lineWidth = 1 / this.zoom;
+			} else {
+				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
+			}
+			
+			this.ctx.fillStyle = color; 
+			this.ctx.globalAlpha = z.enabled ? 0.15 : 0.05;
+			this.ctx.fillRect(z.x, z.y, z.width, z.height);
+			
+			this.ctx.globalAlpha = z.enabled ? 1.0 : 0.5;
+			this.ctx.font = `${10 / this.zoom}px sans-serif`;
+			this.ctx.fillStyle = color;
+			this.ctx.fillText(z.name + (z.enabled ? '' : ' (Off)'), z.x + 2 / this.zoom, z.y - 4 / this.zoom);
+
+			const cx = z.x + z.width / 2;
+			const cy = z.y + z.height / 2;
+			const mag = Math.sqrt(z.fx*z.fx + z.fy*z.fy);
+			
+			if (mag > 0.0001) {
+				const scale = 20; 
+				const arrowLen = Math.min(Math.min(z.width, z.height) * 0.4, mag * 200); 
+				const nx = z.fx / mag;
+				const ny = z.fy / mag;
+				const endX = cx + nx * arrowLen;
+				const endY = cy + ny * arrowLen;
+				
+				this.ctx.beginPath();
+				this.ctx.moveTo(cx, cy);
+				this.ctx.lineTo(endX, endY);
+				this.ctx.stroke();
+				
+				const headSize = 5 / this.zoom;
+				const angle = Math.atan2(ny, nx);
+				this.ctx.beginPath();
+				this.ctx.moveTo(endX, endY);
+				this.ctx.lineTo(endX - headSize * Math.cos(angle - Math.PI/6), endY - headSize * Math.sin(angle - Math.PI/6));
+				this.ctx.moveTo(endX, endY);
+				this.ctx.lineTo(endX - headSize * Math.cos(angle + Math.PI/6), endY - headSize * Math.sin(angle + Math.PI/6));
+				this.ctx.stroke();
+			}
+
+			this.ctx.restore();
+		}
+		
+		if (this.drawMode === 'field' && this.tempZoneStart && this.tempZoneCurrent) {
+			const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
+			const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
+			const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
+			const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
+			
+			this.ctx.strokeStyle = '#27ae60';
+			this.ctx.strokeRect(x, y, w, h);
+			this.ctx.fillStyle = 'rgba(39, 174, 96, 0.3)';
+			this.ctx.fillRect(x, y, w, h);
+		}
+	},
+	
 	draw: function() {
 		window.App.sim.update();
 
@@ -774,6 +849,7 @@ const Rendering = {
 		this.drawGrid();
 		this.drawPeriodicZones(window.App.sim.periodicZones);
 		this.drawViscosityZones(window.App.sim.viscosityZones);
+		this.drawFieldZones(window.App.sim.fieldZones);
 		this.drawSolidBarriers(window.App.sim.solidBarriers);
 		this.drawElasticBonds(window.App.sim.elasticBonds);
 		this.drawFields(window.App.sim.bodies);

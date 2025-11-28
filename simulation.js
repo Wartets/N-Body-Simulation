@@ -69,6 +69,7 @@ const Simulation = {
 		this.viscosityZones = [];
 		this.elasticBonds = [];
 		this.solidBarriers = [];
+		this.fieldZones = [];
 	},
 	
 	addBody: function(m, x, y, vx, vy, col, name, ax = 0, ay = 0,
@@ -177,6 +178,25 @@ const Simulation = {
 		this.solidBarriers = this.solidBarriers.filter(b => b.id !== id);
 	},
 	
+	addFieldZone: function(x, y, w, h, fx, fy, color, name) {
+		this.fieldZones.push({
+			id: Date.now() + Math.random(),
+			name: name || `Field ${this.fieldZones.length + 1}`,
+			x: x,
+			y: y,
+			width: w,
+			height: h,
+			fx: fx || 0,
+			fy: fy || 0.1,
+			color: color || '#27ae60',
+			enabled: true
+		});
+	},
+	
+	removeFieldZone: function(id) {
+		this.fieldZones = this.fieldZones.filter(z => z.id !== id);
+	},
+	
 	calculateFormulaField: function(x, y) {
 		let totalEx = 0;
 		let totalEy = 0;
@@ -281,6 +301,15 @@ const Simulation = {
 					const fy = -bodies[i].vy * z.viscosity;
 					bodies[i].ax += fx / bodies[i].mass;
 					bodies[i].ay += fy / bodies[i].mass;
+				}
+			}
+
+			for (const z of this.fieldZones) {
+				if (!z.enabled) continue;
+				if (bodies[i].x >= z.x && bodies[i].x <= z.x + z.width &&
+					bodies[i].y >= z.y && bodies[i].y <= z.y + z.height) {
+					bodies[i].ax += z.fx;
+					bodies[i].ay += z.fy;
 				}
 			}
 		}
@@ -668,6 +697,15 @@ const Simulation = {
 						const fy = -tempBodies[i].vy * z.viscosity;
 						tempBodies[i].ax += fx / tempBodies[i].mass;
 						tempBodies[i].ay += fy / tempBodies[i].mass;
+					}
+				}
+
+				for (const z of this.fieldZones) {
+					if (!z.enabled) continue;
+					if (tempBodies[i].x >= z.x && tempBodies[i].x <= z.x + z.width &&
+						tempBodies[i].y >= z.y && tempBodies[i].y <= z.y + z.height) {
+						tempBodies[i].ax += z.fx;
+						tempBodies[i].ay += z.fy;
 					}
 				}
 			}

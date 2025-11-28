@@ -701,6 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		refreshViscosityZoneList();
 		refreshElasticBondList();
 		refreshSolidBarrierList();
+		refreshFieldZoneList();
 	};
 	
 	window.App.ui = {
@@ -1034,6 +1035,175 @@ document.addEventListener('DOMContentLoaded', () => {
 			barriersListContainer.appendChild(div);
 		});
 	}
+	
+	const toggleFieldZoneToolBtn = document.getElementById('toggleFieldZoneToolBtn');
+	const fieldZonesListContainer = document.getElementById('fieldZonesListContainer');
+	
+	if (toggleFieldZoneToolBtn) {
+		toggleFieldZoneToolBtn.addEventListener('click', () => {
+			if (Render.drawMode === 'field') {
+				Render.drawMode = 'none';
+				toggleFieldZoneToolBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)';
+				toggleFieldZoneToolBtn.classList.remove('primary');
+				toggleFieldZoneToolBtn.classList.add('secondary');
+				Render.canvas.style.cursor = 'default';
+			} else {
+				Render.drawMode = 'field';
+				toggleFieldZoneToolBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Draw Field (On)';
+				toggleFieldZoneToolBtn.classList.remove('secondary');
+				toggleFieldZoneToolBtn.classList.add('primary');
+				
+				if (toggleViscosityZoneBtn) {
+					toggleViscosityZoneBtn.innerHTML = '<i class="fa-solid fa-water"></i> Draw Viscosity (Off)';
+					toggleViscosityZoneBtn.classList.remove('primary');
+					toggleViscosityZoneBtn.classList.add('secondary');
+				}
+				if (toggleZoneDrawBtn) {
+					toggleZoneDrawBtn.innerHTML = '<i class="fa-solid fa-pen-ruler"></i> Draw Zone (Off)';
+					toggleZoneDrawBtn.classList.remove('primary');
+					toggleZoneDrawBtn.classList.add('secondary');
+				}
+				if (toggleBondToolBtn) {
+					toggleBondToolBtn.innerHTML = '<i class="fa-solid fa-link"></i> Link Bodies (Off)';
+					toggleBondToolBtn.classList.remove('primary');
+					toggleBondToolBtn.classList.add('secondary');
+				}
+				if (toggleBarrierToolBtn) {
+					toggleBarrierToolBtn.innerHTML = '<i class="fa-solid fa-road"></i> Draw Barrier (Off)';
+					toggleBarrierToolBtn.classList.remove('primary');
+					toggleBarrierToolBtn.classList.add('secondary');
+				}
+				
+				Render.canvas.style.cursor = 'crosshair';
+			}
+		});
+
+		// Desactivation croisée pour les autres boutons
+		if (toggleViscosityZoneBtn) {
+			toggleViscosityZoneBtn.addEventListener('click', () => {
+				if (Render.drawMode === 'viscosity') {
+					toggleFieldZoneToolBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)';
+					toggleFieldZoneToolBtn.classList.remove('primary');
+					toggleFieldZoneToolBtn.classList.add('secondary');
+				}
+			});
+		}
+		if (toggleZoneDrawBtn) {
+			toggleZoneDrawBtn.addEventListener('click', () => {
+				if (Render.drawMode === 'periodic') {
+					toggleFieldZoneToolBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)';
+					toggleFieldZoneToolBtn.classList.remove('primary');
+					toggleFieldZoneToolBtn.classList.add('secondary');
+				}
+			});
+		}
+		if (toggleBondToolBtn) {
+			toggleBondToolBtn.addEventListener('click', () => {
+				if (Render.drawMode === 'bond') {
+					toggleFieldZoneToolBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)';
+					toggleFieldZoneToolBtn.classList.remove('primary');
+					toggleFieldZoneToolBtn.classList.add('secondary');
+				}
+			});
+		}
+		if (toggleBarrierToolBtn) {
+			toggleBarrierToolBtn.addEventListener('click', () => {
+				if (Render.drawMode === 'barrier') {
+					toggleFieldZoneToolBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)';
+					toggleFieldZoneToolBtn.classList.remove('primary');
+					toggleFieldZoneToolBtn.classList.add('secondary');
+				}
+			});
+		}
+	}
+
+	function refreshFieldZoneList() {
+		if (!fieldZonesListContainer) return;
+		fieldZonesListContainer.innerHTML = '';
+		Sim.fieldZones.forEach((zone) => {
+			const div = document.createElement('div');
+			div.className = 'zone-card';
+			if (Render.selectedFieldZoneId === zone.id) {
+				div.classList.add('active');
+			}
+			
+			div.addEventListener('click', (e) => {
+				if (e.target.tagName !== 'INPUT' && !e.target.closest('button') && !e.target.classList.contains('toggle-switch')) {
+					Render.selectedFieldZoneId = zone.id;
+					refreshFieldZoneList();
+				}
+			});
+
+			div.innerHTML = `
+				<div class="zone-header">
+					<div style="display: flex; align-items: center; gap: 5px;">
+						<input type="color" class="zone-color" value="${zone.color || '#27ae60'}" style="width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;">
+						<input type="text" class="zone-name" value="${zone.name}" style="width: 80px;">
+					</div>
+					<div style="display:flex; align-items:center; gap:8px;">
+						<label class="toggle-row" style="margin:0;">
+							<input type="checkbox" class="inp-zone-enabled" ${zone.enabled ? 'checked' : ''}>
+							<div class="toggle-switch" style="transform:scale(0.8);"></div>
+						</label>
+						<button class="btn-delete" title="Remove Field"><i class="fa-solid fa-trash"></i></button>
+					</div>
+				</div>
+				<div class="card-grid" style="grid-template-columns: 1fr 1fr;">
+					<div class="mini-input-group"><label>Pos X</label><input type="number" class="inp-zx" value="${zone.x.toFixed(1)}"></div>
+					<div class="mini-input-group"><label>Pos Y</label><input type="number" class="inp-zy" value="${zone.y.toFixed(1)}"></div>
+					<div class="mini-input-group"><label>Width</label><input type="number" class="inp-zw" value="${zone.width.toFixed(1)}"></div>
+					<div class="mini-input-group"><label>Height</label><input type="number" class="inp-zh" value="${zone.height.toFixed(1)}"></div>
+				</div>
+				<div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:4px;">
+					<div class="mini-input-group"><label>Acc X</label><input type="number" class="inp-zfx" value="${zone.fx.toFixed(3)}" step="0.01"></div>
+					<div class="mini-input-group"><label>Acc Y</label><input type="number" class="inp-zfy" value="${zone.fy.toFixed(3)}" step="0.01"></div>
+				</div>
+			`;
+			
+			div.querySelector('.inp-zone-enabled').addEventListener('change', (e) => { zone.enabled = e.target.checked; });
+			div.querySelector('.zone-color').addEventListener('input', (e) => { zone.color = e.target.value; });
+			div.querySelector('.zone-name').addEventListener('change', (e) => { zone.name = e.target.value; });
+			
+			const inpX = div.querySelector('.inp-zx');
+			const inpY = div.querySelector('.inp-zy');
+			const inpW = div.querySelector('.inp-zw');
+			const inpH = div.querySelector('.inp-zh');
+			const inpFx = div.querySelector('.inp-zfx');
+			const inpFy = div.querySelector('.inp-zfy');
+			
+			const updateZone = () => {
+				zone.x = parseFloat(inpX.value) || 0;
+				zone.y = parseFloat(inpY.value) || 0;
+				
+				const rawW = parseFloat(inpW.value);
+				zone.width = rawW > 1 ? rawW : 100;
+				if (zone.width !== rawW) inpW.value = zone.width;
+
+				const rawH = parseFloat(inpH.value);
+				zone.height = rawH > 1 ? rawH : 100;
+				if (zone.height !== rawH) inpH.value = zone.height;
+
+				zone.fx = parseFloat(inpFx.value) || 0;
+				zone.fy = parseFloat(inpFy.value) || 0;
+			};
+			
+			[inpX, inpY, inpW, inpH, inpFx, inpFy].forEach(inp => {
+				inp.addEventListener('change', updateZone);
+				inp.addEventListener('input', updateZone);
+			});
+			
+			div.querySelector('.btn-delete').addEventListener('click', (e) => {
+				e.stopPropagation();
+				Sim.removeFieldZone(zone.id);
+				if (Render.selectedFieldZoneId === zone.id) Render.selectedFieldZoneId = null;
+				refreshFieldZoneList();
+			});
+
+			fieldZonesListContainer.appendChild(div);
+		});
+	}
+
+	window.App.ui.refreshFieldZones = refreshFieldZoneList;
 	
 	window.App.ui.refreshSolidBarrierList = refreshSolidBarrierList;
 	

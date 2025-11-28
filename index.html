@@ -4,9 +4,28 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>N-Body Simulation</title>
-	<meta property="og:image" content="https://wartets.github.io/Wartets/image/app-icon.jpg">
-	<link rel="icon" href="https://wartets.github.io/N-Body-Problem/image/browser-icon.png">
+	
+	<meta name="description" content="A real-time interactive N-Body physics simulation. Explore gravity, electromagnetism, and orbital mechanics with customizable bodies and fields directly in your browser.">
+	<meta name="keywords" content="N-Body, Physics Simulation, Gravity, Orbital Mechanics, Astronomy, JavaScript, Canvas, Interactive, Science, Education, Electromagnetism">
+	<meta name="author" content="Wartets">
+	<meta name="robots" content="index, follow">
+
+	<meta property="og:site_name" content="N-Body Simulation">
 	<meta property="og:type" content="website">
+	<meta property="og:url" content="https://wartets.github.io/N-Body-Problem-2/">
+	<meta property="og:title" content="N-Body Simulation">
+	<meta property="og:description" content="Simulate complex gravitational and electromagnetic interactions in real-time. Create solar systems, galaxies, or particle experiments.">
+	<meta property="og:image" content="https://wartets.github.io/N-Body-Problem-2/app-icon.jpg">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:url" content="https://wartets.github.io/N-Body-Problem-2/">
+	<meta name="twitter:title" content="N-Body Simulation">
+	<meta name="twitter:description" content="Simulate complex gravitational and electromagnetic interactions in real-time. Create solar systems, galaxies, or particle experiments.">
+	<meta name="twitter:image" content="https://wartets.github.io/N-Body-Problem-2/app-icon.jpg">
+
+	<link rel="icon" href="https://wartets.github.io/N-Body-Problem/image/browser-icon.png">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 	<link rel="stylesheet" href="style.css">
 </head>
@@ -310,6 +329,18 @@
 				<div class="divider-sub"></div>
 				
 				<div id="barriersListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+				</div>
+			</div>
+			
+			<div class="control-section">
+				<div class="section-header">Field Zones</div>
+				<button id="toggleFieldZoneToolBtn" class="btn secondary">
+					<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)
+				</button>
+				
+				<div class="divider-sub"></div>
+				
+				<div id="fieldZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
 				</div>
 			</div>
 		</div>

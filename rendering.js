@@ -988,7 +988,9 @@ const Rendering = {
 	},
 	
 	applyDistortion: function(x, y) {
-		if (this.gridDistortion <= 0.01) return {x, y};
+		if (!window.App.sim.enableGravity || this.gridDistortion <= 0) {
+			return {x, y};
+		}
 
 		let totalDx = 0;
 		let totalDy = 0;

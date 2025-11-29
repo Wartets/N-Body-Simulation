@@ -128,7 +128,7 @@ canvas {
 	background: #444;
 	border-radius: 3px;
 }
-#panelContent::-webkit-scrollbar-thumb:hover, #toolsContent::-webkit-scrollbar-thumb {
+#panelContent::-webkit-scrollbar-thumb:hover, #toolsContent::-webkit-scrollbar-thumb:hover {
 	background: #555;
 }
 
@@ -602,6 +602,7 @@ button, input, select, label, .btn, .toggle-row {
 	
 	#controlPanel, #toolsPanel {
 		top: 5px;
+		width: 400px;
 		max-height: calc(100vh - 10px);
 	}
 	
@@ -645,5 +646,18 @@ button, input, select, label, .btn, .toggle-row {
 	
 	.card-grid {
 		grid-template-columns: repeat(3, 1fr);
+	}
+}
+
+@media (max-width: 400px) {
+	#controlPanel, #toolsPanel {
+		top: 5px;
+		width: calc(100vw - 10px);
+		max-height: calc(100vh - 10px);
+	}
+	
+	#controlPanel.collapsed, #toolsPanel.collapsed {
+		width: calc(50vw - 7.5px);
+		min-width: 150px;
 	}
 }

@@ -4,26 +4,28 @@ document.addEventListener('DOMContentLoaded', () => {
 	let maxZIndex = 100;
 	let draggedItemIndex = null;
 
-	const inputsToParse = ['newMass', 'newRadius', 'newRestitution', 'newX', 'newY', 'newCharge', 'newVX', 'newVY', 'newMagMoment', 'newAX', 'newAY', 'newRotationSpeed', 'newTemperature', 'newYoungModulus', 'newFriction', 'newLifetime'];
+	const Schema = window.App.BodySchema;
 	
-	const bodyProperties = [
-		{ label: 'Mass', key: 'mass', cls: 'inp-mass', tip: 'Body mass. Set to -1 for a fixed body.', constraint: 'mass' },
-		{ label: 'Radius', key: 'radius', cls: 'inp-radius', tip: 'Body radius for collisions.', constraint: 'positive' },
-		{ label: 'Restitution', key: 'restitution', cls: 'inp-restitution', tip: 'Elasticity coefficient (0-1).', constraint: 'non-negative' },
-		{ label: 'Position X', key: 'x', cls: 'inp-x', tip: 'Current X coordinate.', constraint: 'default', prec: 2 },
-		{ label: 'Position Y', key: 'y', cls: 'inp-y', tip: 'Current Y coordinate.', constraint: 'default', prec: 2 },
-		{ label: 'Charge (e)', key: 'charge', cls: 'inp-charge', tip: 'Electric charge.', constraint: 'default' },
-		{ label: 'Velocity X', key: 'vx', cls: 'inp-vx', tip: 'Current velocity on X axis.', constraint: 'default', prec: 3 },
-		{ label: 'Velocity Y', key: 'vy', cls: 'inp-vy', tip: 'Current velocity on Y axis.', constraint: 'default', prec: 3 },
-		{ label: 'Mag Moment', key: 'magMoment', cls: 'inp-magMoment', tip: 'Magnetic moment.', constraint: 'default' },
-		{ label: 'Start Acc X', key: 'startAx', cls: 'inp-start-ax', tip: 'Constant acceleration on X.', constraint: 'default', prec: 3 },
-		{ label: 'Start Acc Y', key: 'startAy', cls: 'inp-start-ay', tip: 'Constant acceleration on Y.', constraint: 'default', prec: 3 },
-		{ label: 'Rotation Speed', key: 'rotationSpeed', cls: 'inp-rotSpeed', tip: 'Rotation speed.', constraint: 'default', prec: 3 },
-		{ label: 'Temperature', key: 'temperature', cls: 'inp-temp', tip: 'Temperature (visual).', constraint: 'non-negative', prec: 0 },
-		{ label: 'Young\'s Mod.', key: 'youngModulus', cls: 'inp-youngMod', tip: 'Body hardness during collision.', constraint: 'non-negative', prec: 0 },
-		{ label: 'Friction', key: 'friction', cls: 'inp-friction', tip: 'Friction coefficient.', constraint: 'non-negative' },
-		{ label: 'Lifetime', key: 'lifetime', cls: 'inp-lifetime', tip: 'Lifetime in \'ticks\'. -1 for infinite.', constraint: 'lifetime', prec: 0 }
-	];
+	const getInputId = (key) => {
+		if (Schema[key].inputId) return Schema[key].inputId;
+		const capKey = key.charAt(0).toUpperCase() + key.slice(1);
+		return `new${capKey}`;
+	};
+
+	const inputsToParse = Object.keys(Schema)
+		.filter(k => Schema[k].type === 'number')
+		.map(k => getInputId(k));
+	
+	const bodyProperties = Object.keys(Schema)
+		.filter(k => Schema[k].type === 'number')
+		.map(k => ({
+			label: Schema[k].label,
+			key: Schema[k].internal || k,
+			cls: `inp-${k}`,
+			tip: Schema[k].tip,
+			constraint: Schema[k].constraint || 'default',
+			prec: Schema[k].prec
+		}));
 	
 	const evaluateMathExpression = (expr) => {
 		if (typeof expr !== 'string' || expr.trim() === '') return expr;
@@ -524,45 +526,29 @@ document.addEventListener('DOMContentLoaded', () => {
 	};
 	
 	const injectCurrentBody = () => {
-		const m = parseFloat(document.getElementById('newMass').value);
-		const x = parseFloat(document.getElementById('newX').value);
-		const y = parseFloat(document.getElementById('newY').value);
-		const vx = parseFloat(document.getElementById('newVX').value);
-		const vy = parseFloat(document.getElementById('newVY').value);
-		const radius = parseFloat(document.getElementById('newRadius').value);
-		const ax = parseFloat(document.getElementById('newAX').value) || 0;
-		const ay = parseFloat(document.getElementById('newAY').value) || 0;
+		const config = {};
 		
-		const charge = parseFloat(document.getElementById('newCharge').value) || 0;
-		const magMoment = parseFloat(document.getElementById('newMagMoment').value) || 0;
-		const restitution = parseFloat(document.getElementById('newRestitution').value) || 1.0;
-		const lifetime = parseFloat(document.getElementById('newLifetime').value) || -1;
-		const temperature = parseFloat(document.getElementById('newTemperature').value) || 0;
-		const rotationSpeed = parseFloat(document.getElementById('newRotationSpeed').value) || 0;
-		const youngModulus = parseFloat(document.getElementById('newYoungModulus').value) || 0;
-		const friction = parseFloat(document.getElementById('newFriction').value) || 0.5;
-		
-		const presetColor = document.getElementById('presetSelect').dataset.color || null;
-
-		Sim.addBody({
-			mass: m,
-			x: x,
-			y: y,
-			vx: vx,
-			vy: vy,
-			radius: radius,
-			color: presetColor,
-			ax: ax,
-			ay: ay,
-			charge: charge,
-			magMoment: magMoment,
-			restitution: restitution,
-			lifetime: lifetime,
-			temperature: temperature,
-			rotationSpeed: rotationSpeed,
-			youngModulus: youngModulus,
-			friction: friction
+		Object.keys(Schema).forEach(key => {
+			const def = Schema[key];
+			if (def.type === 'number') {
+				const id = getInputId(key);
+				const el = document.getElementById(id);
+				if (el) {
+					const val = parseFloat(el.value);
+					if (!isNaN(val)) {
+						config[key] = val;
+					} else {
+						config[key] = def.default;
+					}
+				}
+			}
 		});
+
+		const presetSelect = document.getElementById('presetSelect');
+		const presetColor = (presetSelect && presetSelect.dataset.color) ? presetSelect.dataset.color : null;
+		if (presetColor) config.color = presetColor;
+
+		Sim.addBody(config);
 	};
 	
 	const bindRange = (idInput, idDisplay, obj, prop, isFloat = false, prec = 1) => {
@@ -807,14 +793,13 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	};
 	
-	const constraintMap = {
-		'newMass': 'mass', 'newRadius': 'positive', 'newRestitution': 'non-negative',
-		'newCharge': 'default', 'newMagMoment': 'default', 'newRotationSpeed': 'default',
-		'newTemperature': 'non-negative', 'newYoungModulus': 'non-negative',
-		'newFriction': 'non-negative', 'newLifetime': 'lifetime',
-		'newX': 'default', 'newY': 'default', 'newVX': 'default', 'newVY': 'default',
-		'newAX': 'default', 'newAY': 'default'
-	};
+	const constraintMap = {};
+	Object.keys(Schema).forEach(key => {
+		const def = Schema[key];
+		if (def.type === 'number') {
+			constraintMap[getInputId(key)] = def.constraint || 'default';
+		}
+	});
 	
 	const originalReset = Sim.reset.bind(Sim);
 	const originalAddBody = Sim.addBody.bind(Sim);
@@ -1326,31 +1311,13 @@ document.addEventListener('DOMContentLoaded', () => {
 			<div class="card-grid"></div>
 		`;
 
-		const fields = [
-			{ label: 'Mass', key: 'mass', cls: 'inp-mass', tip: 'Body mass. Set to -1 for a fixed body.', constraint: 'mass' },
-			{ label: 'Radius', key: 'radius', cls: 'inp-radius', tip: 'Body radius for collisions.', constraint: 'positive' },
-			{ label: 'Restitution', key: 'restitution', cls: 'inp-restitution', tip: 'Elasticity coefficient (0-1).', constraint: 'non-negative' },
-			{ label: 'Position X', key: 'x', cls: 'inp-x', tip: 'Current X coordinate.', constraint: 'default' },
-			{ label: 'Position Y', key: 'y', cls: 'inp-y', tip: 'Current Y coordinate.', constraint: 'default' },
-			{ label: 'Charge (e)', key: 'charge', cls: 'inp-charge', tip: 'Electric charge.', constraint: 'default' },
-			{ label: 'Velocity X', key: 'vx', cls: 'inp-vx', tip: 'Current velocity on X axis.', constraint: 'default' },
-			{ label: 'Velocity Y', key: 'vy', cls: 'inp-vy', tip: 'Current velocity on Y axis.', constraint: 'default' },
-			{ label: 'Mag Moment', key: 'magMoment', cls: 'inp-magMoment', tip: 'Magnetic moment.', constraint: 'default' },
-			{ label: 'Start Acc X', key: 'startAx', cls: 'inp-start-ax', tip: 'Constant acceleration on X.', constraint: 'default' },
-			{ label: 'Start Acc Y', key: 'startAy', cls: 'inp-start-ay', tip: 'Constant acceleration on Y.', constraint: 'default' },
-			{ label: 'Rotation Speed', key: 'rotationSpeed', cls: 'inp-rotSpeed', tip: 'Rotation speed.', constraint: 'default' },
-			{ label: 'Temperature', key: 'temperature', cls: 'inp-temp', tip: 'Temperature (visual).', constraint: 'non-negative' },
-			{ label: 'Young\'s Mod.', key: 'youngModulus', cls: 'inp-youngMod', tip: 'Body hardness during collision.', constraint: 'non-negative' },
-			{ label: 'Friction', key: 'friction', cls: 'inp-friction', tip: 'Friction coefficient.', constraint: 'non-negative' },
-			{ label: 'Lifetime', key: 'lifetime', cls: 'inp-lifetime', tip: 'Lifetime in \'ticks\'. -1 for infinite.', constraint: 'lifetime' }
-		];
-
 		const grid = div.querySelector('.card-grid');
 		
-		fields.forEach(field => {
+		bodyProperties.forEach(field => {
 			const group = document.createElement('div');
 			group.className = 'mini-input-group';
-			group.innerHTML = `<label>${field.label} <i class="fa-solid fa-circle-question help-icon" data-tooltip="${field.tip}"></i></label><input type="text" class="${field.cls}" value="${body[field.key]}">`;
+			const val = body[field.key];
+			group.innerHTML = `<label>${field.label} <i class="fa-solid fa-circle-question help-icon" data-tooltip="${field.tip}"></i></label><input type="text" class="${field.cls}" value="${val}">`;
 			grid.appendChild(group);
 
 			const input = group.querySelector('input');
@@ -1363,13 +1330,11 @@ document.addEventListener('DOMContentLoaded', () => {
 			const handler = () => {
 				const val = parseFloat(input.value);
 				if (!isNaN(val)) {
-					// Handle specific logic for -1 mass/lifetime or limits
 					if (field.constraint === 'mass' && val < 1e-6 && val !== -1) body[field.key] = 1e-6;
 					else if (field.constraint === 'positive' && val < 1e-6) body[field.key] = 1e-6;
 					else if (field.constraint === 'non-negative' && val < 0) body[field.key] = 0;
 					else body[field.key] = val;
 				}
-				// Force UI update if corrected
 				if (body[field.key] !== val && !(field.constraint==='mass' && val===-1)) {
 					input.value = body[field.key];
 				}
@@ -2209,39 +2174,15 @@ document.addEventListener('DOMContentLoaded', () => {
 				const body = Sim.bodies[index];
 				if (!body) continue;
 
-				const inpX = cards[i].querySelector('.inp-x');
-				const inpY = cards[i].querySelector('.inp-y');
-				const inpVX = cards[i].querySelector('.inp-vx');
-				const inpVY = cards[i].querySelector('.inp-vy');
-				const inpAX = cards[i].querySelector('.inp-start-ax'); 
-				const inpAY = cards[i].querySelector('.inp-start-ay'); 
-				const inpRadius = cards[i].querySelector('.inp-radius');
-
-				const inpCharge = cards[i].querySelector('.inp-charge');
-				const inpMagMoment = cards[i].querySelector('.inp-magMoment');
-				const inpRestitution = cards[i].querySelector('.inp-restitution');
-				const inpLifetime = cards[i].querySelector('.inp-lifetime');
-				const inpTemp = cards[i].querySelector('.inp-temp');
-				const inpRotSpeed = cards[i].querySelector('.inp-rotSpeed');
-				const inpYoungMod = cards[i].querySelector('.inp-youngMod');
-				const inpFriction = cards[i].querySelector('.inp-friction');
-
-				if (document.activeElement !== inpX) inpX.value = formatVal(body.x, 2);
-				if (document.activeElement !== inpY) inpY.value = formatVal(body.y, 2);
-				if (document.activeElement !== inpVX) inpVX.value = formatVal(body.vx, 3);
-				if (document.activeElement !== inpVY) inpVY.value = formatVal(body.vy, 3);
-				if (document.activeElement !== inpAX) inpAX.value = formatVal(body.startAx, 3);
-				if (document.activeElement !== inpAY) inpAY.value = formatVal(body.startAy, 3);
-				if (document.activeElement !== inpRadius) inpRadius.value = formatVal(body.radius, 2);
-
-				if (document.activeElement !== inpCharge) inpCharge.value = formatVal(body.charge, 2);
-				if (document.activeElement !== inpMagMoment) inpMagMoment.value = formatVal(body.magMoment, 2);
-				if (document.activeElement !== inpRestitution) inpRestitution.value = formatVal(body.restitution, 2);
-				if (document.activeElement !== inpLifetime) inpLifetime.value = body.lifetime;
-				if (document.activeElement !== inpTemp) inpTemp.value = formatVal(body.temperature, 0);
-				if (document.activeElement !== inpRotSpeed) inpRotSpeed.value = formatVal(body.rotationSpeed, 3);
-				if (document.activeElement !== inpYoungMod) inpYoungMod.value = formatVal(body.youngModulus, 0);
-				if (document.activeElement !== inpFriction) inpFriction.value = formatVal(body.friction, 2);
+				bodyProperties.forEach(prop => {
+					const input = cards[i].querySelector(`.${prop.cls}`);
+					if (input && document.activeElement !== input) {
+						let val = body[prop.key];
+						if (typeof val === 'number') {
+							input.value = formatVal(val, prop.prec !== undefined ? prop.prec : 2);
+						}
+					}
+				});
 			}
 		},
 		
@@ -2320,14 +2261,16 @@ document.addEventListener('DOMContentLoaded', () => {
 	
 	bindRange('trailPrecSlider', 'trailPrecVal', Sim, 'trailStep');
 	bindRange('predictionLenSlider', 'predictionLenVal', Render, 'predictionLength', false, 0);
-
+	
 	inputsToParse.forEach(id => {
 		const input = document.getElementById(id);
 		if (input) {
 			const wrapper = input.closest('.input-wrapper');
 			if (wrapper) {
 				const label = wrapper.querySelector('label');
-				setupInteractiveLabel(label, input, constraintMap[id]);
+				if (label) {
+					setupInteractiveLabel(label, input, constraintMap[id]);
+				}
 			}
 		}
 	});

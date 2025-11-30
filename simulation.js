@@ -4,34 +4,54 @@ window.App = {
 	ui: null
 };
 
+window.App.BodySchema = {
+	mass: { default: 1, label: 'Mass', tip: 'Body mass. Set to -1 for a fixed body.', type: 'number', constraint: 'mass' },
+	radius: { default: 2, label: 'Radius', tip: 'Body radius for collisions.', type: 'number', constraint: 'positive' },
+	restitution: { default: 1.0, label: 'Restit. Coeff.', tip: 'Collision elasticity (0-1).', type: 'number', constraint: 'non-negative' },
+	x: { default: 0, label: 'Position X', tip: 'Current X coordinate.', type: 'number', constraint: 'default', prec: 2 },
+	y: { default: 0, label: 'Position Y', tip: 'Current Y coordinate.', type: 'number', constraint: 'default', prec: 2 },
+	vx: { default: 0, label: 'Velocity X', tip: 'Current velocity on X axis.', type: 'number', constraint: 'default', prec: 3 },
+	vy: { default: 0, label: 'Velocity Y', tip: 'Current velocity on Y axis.', type: 'number', constraint: 'default', prec: 3 },
+	ax: { default: 0, label: 'Acc X', tip: 'Constant acceleration on X axis.', type: 'number', constraint: 'default', prec: 3, inputId: 'newAX', internal: 'startAx' },
+	ay: { default: 0, label: 'Acc Y', tip: 'Constant acceleration on Y axis.', type: 'number', constraint: 'default', prec: 3, inputId: 'newAY', internal: 'startAy' },
+	charge: { default: 0, label: 'Charge (e)', tip: 'Body electric charge.', type: 'number', constraint: 'default' },
+	magMoment: { default: 0, label: 'Mag. Moment', tip: 'Body magnetic moment.', type: 'number', constraint: 'default' },
+	rotationSpeed: { default: 0, label: 'Rot. Speed', tip: 'Body rotation speed.', type: 'number', constraint: 'default', prec: 3 },
+	temperature: { default: 0, label: 'Temp.', tip: 'Body temperature (currently visual only).', type: 'number', constraint: 'non-negative', prec: 0 },
+	youngModulus: { default: 0, label: 'Young\'s Mod.', tip: 'Material Young\'s modulus.', type: 'number', constraint: 'non-negative', prec: 0 },
+	friction: { default: 0.5, label: 'Friction Coeff.', tip: 'Friction coefficient during collisions.', type: 'number', constraint: 'non-negative' },
+	lifetime: { default: -1, label: 'Lifetime', tip: 'Body lifetime in simulation ticks. -1 for infinite.', type: 'number', constraint: 'lifetime', prec: 0 },
+	name: { default: "Body", label: 'Name', type: 'string' },
+	color: { default: null, label: 'Color', type: 'color' }
+};
+
 class Body {
 	constructor(config = {}) {
-		this.mass = config.mass ?? 1;
-		this.x = config.x ?? 0;
-		this.y = config.y ?? 0;
-		this.vx = config.vx ?? 0;
-		this.vy = config.vy ?? 0;
-		this.startAx = config.ax ?? 0;
-		this.startAy = config.ay ?? 0;
+		const schema = window.App.BodySchema;
+		
+		Object.keys(schema).forEach(key => {
+			const def = schema[key];
+			const targetKey = def.internal || key;
+			
+			if (config[key] !== undefined) {
+				this[targetKey] = config[key];
+			} else if (config[targetKey] !== undefined) {
+				this[targetKey] = config[targetKey];
+			} else {
+				if (key === 'color' && !def.default) {
+					this[targetKey] = `hsl(${Math.random() * 360}, 70%, 60%)`;
+				} else if (key === 'radius' && (!config.radius || config.radius <= 0)) {
+					const m = this.mass ?? 1;
+					this[targetKey] = (m > 1 ? Math.max(2, Math.log(m) * 2) : 2);
+				} else {
+					this[targetKey] = def.default;
+				}
+			}
+		});
+
 		this.ax = 0;
 		this.ay = 0;
-		
-		this.radius = (config.radius && config.radius > 0) 
-			? config.radius 
-			: (this.mass > 1 ? Math.max(2, Math.log(this.mass) * 2) : 2);
-			
-		this.color = config.color || `hsl(${Math.random() * 360}, 70%, 60%)`;
-		this.name = config.name || "Body";
 		this.path = [];
-		
-		this.charge = config.charge ?? 0;
-		this.magMoment = config.magMoment ?? 0;
-		this.restitution = config.restitution ?? 1.0;
-		this.lifetime = config.lifetime ?? -1;
-		this.temperature = config.temperature ?? 0;
-		this.rotationSpeed = config.rotationSpeed ?? 0;
-		this.youngModulus = config.youngModulus ?? 0;
-		this.friction = config.friction ?? 0.5;
 		this.angle = 0;
 	}
 };
@@ -77,9 +97,10 @@ const Simulation = {
 	},
 	
 	addBody: function(config) {
-		const defaults = { name: `Body ${this.bodies.length + 1}` };
-		const finalConfig = { ...defaults, ...config };
-		const newBody = new Body(finalConfig);
+		const newBody = new Body({
+			name: `Body ${this.bodies.length + 1}`,
+			...config
+		});
 		this.bodies.push(newBody);
 	},
 	

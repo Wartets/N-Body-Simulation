@@ -263,6 +263,42 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 	
+	const withProgressBar = (task, onComplete) => {
+		const progressBarContainer = document.getElementById('loading-progress-bar-container');
+		const progressBar = document.getElementById('loading-progress-bar');
+
+		if (!progressBarContainer || !progressBar) {
+			task();
+			if (onComplete) onComplete();
+			return;
+		}
+
+		progressBarContainer.style.display = 'block';
+		progressBar.style.width = '0%';
+		progressBar.style.transition = 'width 0.2s ease-in-out';
+
+		setTimeout(() => {
+			progressBar.style.width = '50%';
+
+			setTimeout(() => {
+				isBatchLoading = true;
+				try {
+					task();
+				} finally {
+					isBatchLoading = false;
+				}
+				
+				progressBar.style.width = '100%';
+
+				setTimeout(() => {
+					progressBarContainer.style.display = 'none';
+					progressBar.style.transition = '';
+					if (onComplete) onComplete();
+				}, 250);
+			}, 210);
+		}, 20);
+	};	
+	
 	const generateRandomParameters = (setDefault = false, onlyKinematics = false) => {
 		const bodies = Sim.bodies;
 		let totalMass = 0;
@@ -441,15 +477,9 @@ document.addEventListener('DOMContentLoaded', () => {
 		loadBtn.addEventListener('click', () => {
 			const idx = parseInt(select.value, 10);
 			if (presets[idx]) {
-				const progressBarContainer = document.getElementById('loading-progress-bar-container');
-				progressBarContainer.style.display = 'block';
-				document.getElementById('loading-progress-bar').style.width = '0%';
-
-				setTimeout(() => {
-					isBatchLoading = true;
+				const task = () => {
 					Sim.reset();
 					presets[idx].init(Sim);
-					isBatchLoading = false;
 					
 					const updateCheck = (id, val) => {
 						const el = document.getElementById(id);
@@ -468,11 +498,13 @@ document.addEventListener('DOMContentLoaded', () => {
 					updateCheck('elecBox', Sim.enableElectricity);
 					updateCheck('magBox', Sim.enableMagnetism);
 					updateCheck('colBox', Sim.enableCollision);
-
-					refreshBodyListAsync(() => {
-						Render.draw();
-					});
-				}, 50);
+					
+					refreshBodyList();
+				};
+				
+				withProgressBar(task, () => {
+					Render.draw();
+				});
 			}
 		});
 	};
@@ -844,15 +876,16 @@ document.addEventListener('DOMContentLoaded', () => {
 	const injHeader = document.querySelector('#injectionSection .section-header');
 	
 	const drawTools = [
-		{ id: 'toggleZoneDrawBtn', mode: 'periodic', text: 'Draw Zone', icon: 'fa-pen-ruler' },
-		{ id: 'toggleViscosityZoneBtn', mode: 'viscosity', text: 'Draw Viscosity', icon: 'fa-water' },
-		{ id: 'toggleFieldZoneToolBtn', mode: 'field', text: 'Draw Field', icon: 'fa-arrow-down' },
-		{ id: 'toggleThermalZoneBtn', mode: 'thermal', text: 'Draw Thermal', icon: 'fa-temperature-high' },
+		{ id: 'toggleZoneDrawBtn', mode: 'periodic', text: 'Draw Zone', icon: 'fa-pen-ruler', shapeSelectorId: 'periodicZoneShapeSelector' },
+		{ id: 'toggleViscosityZoneBtn', mode: 'viscosity', text: 'Draw Viscosity', icon: 'fa-water', shapeSelectorId: 'viscosityZoneShapeSelector' },
+		{ id: 'toggleFieldZoneToolBtn', mode: 'field', text: 'Draw Field', icon: 'fa-arrow-down', shapeSelectorId: 'fieldZoneShapeSelector' },
+		{ id: 'toggleThermalZoneBtn', mode: 'thermal', text: 'Draw Thermal', icon: 'fa-temperature-high', shapeSelectorId: 'thermalZoneShapeSelector' },
 		{ id: 'toggleBarrierToolBtn', mode: 'barrier', text: 'Draw Barrier', icon: 'fa-road' },
 		{ id: 'toggleBondToolBtn', mode: 'bond', text: 'Link Bodies', icon: 'fa-link' }
 	];
 	
-	const updateDrawToolButtons = (activeMode) => {
+	const updateDrawToolButtons = () => {
+		const activeMode = Render.drawMode;
 		drawTools.forEach(tool => {
 			const btn = document.getElementById(tool.id);
 			if (btn) {
@@ -860,6 +893,14 @@ document.addEventListener('DOMContentLoaded', () => {
 				btn.innerHTML = `<i class="fa-solid ${tool.icon}"></i> ${tool.text} (${isActive ? 'On' : 'Off'})`;
 				btn.classList.toggle('primary', isActive);
 				btn.classList.toggle('secondary', !isActive);
+				
+				const parentGroup = btn.parentElement;
+				if(parentGroup && parentGroup.classList.contains('tool-group')) {
+					const shapeSelector = parentGroup.querySelector('.btn-group');
+					if(shapeSelector) {
+						shapeSelector.style.display = isActive ? 'flex' : 'none';
+					}
+				}
 			}
 		});
 		Render.canvas.style.cursor = activeMode === 'none' ? 'default' : 'crosshair';
@@ -889,59 +930,73 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.body.appendChild(progressBarContainer);
 	setupDraggable(panel, header, [toolsPanel]);
 	setupDraggable(toolsPanel, toolsHeader, [panel]);
-	
+		
 	document.getElementById('zeroVelBtn').addEventListener('click', () => {
-		Sim.zeroVelocities();
-		if (window.App.ui && window.App.ui.syncInputs) {
-			window.App.ui.syncInputs(true);
-		}
+		withProgressBar(() => {
+			Sim.zeroVelocities();
+			if (window.App.ui && window.App.ui.syncInputs) {
+				window.App.ui.syncInputs(true);
+			}
+		});
 	});
 
 	document.getElementById('reverseVelBtn').addEventListener('click', () => {
-		Sim.reverseTime();
-		if (window.App.ui && window.App.ui.syncInputs) {
-			window.App.ui.syncInputs(true);
-		}
+		withProgressBar(() => {
+			Sim.reverseTime();
+			if (window.App.ui && window.App.ui.syncInputs) {
+				window.App.ui.syncInputs(true);
+			}
+		});
 	});
 
 	document.getElementById('cullBtn').addEventListener('click', () => {
-		const z = Render.zoom;
-		const w = Render.width;
-		const h = Render.height;
-		
-		const minX = (-w / 2 - Render.camX) / z;
-		const maxX = (w / 2 - Render.camX) / z;
-		const minY = (-h / 2 - Render.camY) / z;
-		const maxY = (h / 2 - Render.camY) / z;
+		withProgressBar(() => {
+			const z = Render.zoom;
+			const w = Render.width;
+			const h = Render.height;
+			
+			const minX = (-w / 2 - Render.camX) / z;
+			const maxX = (w / 2 - Render.camX) / z;
+			const minY = (-h / 2 - Render.camY) / z;
+			const maxY = (h / 2 - Render.camY) / z;
 
-		Sim.cullDistant(minX, maxX, minY, maxY);
-		refreshBodyList();
+			Sim.cullDistant(minX, maxX, minY, maxY);
+			refreshBodyList();
+		});
 	});
 
 	document.getElementById('snapBtn').addEventListener('click', () => {
-		Sim.snapToGrid(50);
-		if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs(true);
+		withProgressBar(() => {
+			Sim.snapToGrid(50);
+			if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs(true);
+		});
 	});
 
 	document.getElementById('killRotBtn').addEventListener('click', () => {
-		Sim.killRotation();
-		if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs(true);
+		withProgressBar(() => {
+			Sim.killRotation();
+			if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs(true);
+		});
 	});
 
 	document.getElementById('scatterBtn').addEventListener('click', () => {
-		const zoom = Render.zoom;
-		const w = Render.width / zoom;
-		const h = Render.height / zoom;
-		const x = -Render.camX / zoom - w/2;
-		const y = -Render.camY / zoom - h/2;
-		
-		Sim.scatterPositions(x + w*0.1, y + h*0.1, w*0.8, h*0.8);
-		if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs(true);
+		withProgressBar(() => {
+			const zoom = Render.zoom;
+			const w = Render.width / zoom;
+			const h = Render.height / zoom;
+			const x = -Render.camX / zoom - w/2;
+			const y = -Render.camY / zoom - h/2;
+			
+			Sim.scatterPositions(x + w*0.1, y + h*0.1, w*0.8, h*0.8);
+			if (window.App.ui && window.App.ui.syncInputs) window.App.ui.syncInputs(true);
+		});
 	});
 
 	document.getElementById('equalMassBtn').addEventListener('click', () => {
-		Sim.equalizeMasses();
-		refreshBodyList();
+		withProgressBar(() => {
+			Sim.equalizeMasses();
+			refreshBodyList();
+		});
 	});
 
 	document.getElementById('addFieldBtn').addEventListener('click', () => {
@@ -974,20 +1029,31 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.getElementById('randomizeBtn').addEventListener('click', () => generateRandomParameters(false));
 
 	document.getElementById('resetBtn').addEventListener('click', () => {
-		Sim.reset();
-		Sim.paused = true;
+		const task = () => {
+			Sim.reset();
+			Sim.paused = true;
+			
+			playBtn.innerHTML = '<i class="fa-solid fa-play"></i> RESUME';
+			playBtn.classList.remove('primary');
+			playBtn.style.color = "#aaa";
+			
+			generateRandomParameters(true);
+			injectCurrentBody();
+			generateRandomParameters(false);
+			
+			refreshBodyList();
+			refreshZoneList();
+			refreshViscosityZoneList();
+			refreshThermalZoneList();
+			refreshElasticBondList();
+			refreshSolidBarrierList();
+			refreshFieldZoneList();
+			refreshFieldList();
+		};
 		
-		playBtn.innerHTML = '<i class="fa-solid fa-play"></i> RESUME';
-		playBtn.classList.remove('primary');
-		playBtn.style.color = "#aaa";
-		
-		generateRandomParameters(true);
-		injectCurrentBody();
-		generateRandomParameters(false);
-		
-		refreshBodyList();
-		refreshFieldList();
-		Render.draw(); 
+		withProgressBar(task, () => {
+			Render.draw();
+		});
 	});
 	
 	document.getElementById('addBodyBtn').addEventListener('click', () => {
@@ -1285,15 +1351,40 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 		addMathParsing(ambientTempInput);
 	}
-	
+		
 	drawTools.forEach(tool => {
 		const btn = document.getElementById(tool.id);
 		if (btn) {
 			btn.addEventListener('click', () => {
 				const newMode = Render.drawMode === tool.mode ? 'none' : tool.mode;
 				Render.drawMode = newMode;
-				updateDrawToolButtons(newMode);
+				updateDrawToolButtons();
 			});
+
+			if (tool.shapeSelectorId) {
+				const shapeSelector = document.getElementById(tool.shapeSelectorId);
+				if (shapeSelector) {
+					const shapeButtons = shapeSelector.querySelectorAll('button[data-shape]');
+					
+					const updateButtons = () => {
+						shapeButtons.forEach(b => {
+							const isActive = b.dataset.shape === Render.drawShapes[tool.mode];
+							b.classList.toggle('active', isActive);
+							b.classList.toggle('primary', isActive);
+							b.classList.toggle('secondary', !isActive);
+						});
+					};
+
+					shapeButtons.forEach(shapeBtn => {
+						shapeBtn.addEventListener('click', () => {
+							Render.drawShapes[tool.mode] = shapeBtn.dataset.shape;
+							updateButtons();
+						});
+					});
+					
+					updateButtons();
+				}
+			}
 		}
 	});
 
@@ -1570,9 +1661,29 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		});
 
+		const isCircle = zone.shape === 'circle';
+		let fieldsToShow;
+
+		if (isCircle) {
+			const otherFields = config.fields.filter(f => !['x', 'y', 'width', 'height'].includes(f.key));
+			fieldsToShow = [
+				{ label: 'Center X', key: 'x', prec: 1 },
+				{ label: 'Center Y', key: 'y', prec: 1 },
+				{ label: 'Radius', key: 'radius', prec: 1, min: 1 },
+				...otherFields
+			];
+			if (zone.radius === undefined) {
+				zone.radius = zone.width || 50;
+			}
+		} else {
+			fieldsToShow = config.fields.filter(f => f.key !== 'radius');
+		}
+		
 		let gridHtml = '';
-		config.fields.forEach(field => {
-			gridHtml += `<div class="mini-input-group"><label>${field.label}</label><input type="number" class="inp-${field.key}" value="${zone[field.key].toFixed(field.prec || 1)}" ${field.step ? `step="${field.step}"` : ''}></div>`;
+		fieldsToShow.forEach(field => {
+			let value = zone[field.key];
+			if (value === undefined) value = 0;
+			gridHtml += `<div class="mini-input-group"><label>${field.label}</label><input type="number" class="inp-${field.key}" value="${value.toFixed(field.prec || 1)}" ${field.step ? `step="${field.step}"` : ''}></div>`;
 		});
 
 		let extraHtml = '';
@@ -1580,10 +1691,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			extraHtml = config.extra(zone);
 		}
 
+		const shapeIcon = zone.shape === 'circle' ? 'fa-circle' : 'fa-square';
 		div.innerHTML = `
 			<div class="zone-header">
 				<div style="display: flex; align-items: center; gap: 5px;">
 					<input type="color" class="zone-color" value="${zone.color || config.defaultColor}" style="width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;">
+					<i class="fa-solid ${shapeIcon}" style="color: var(--text-secondary); font-size: 10px;" title="Shape: ${zone.shape}"></i>
 					<input type="text" class="zone-name" value="${zone.name}">
 				</div>
 				<div style="display:flex; align-items:center; gap:8px;">
@@ -1599,14 +1712,16 @@ document.addEventListener('DOMContentLoaded', () => {
 		`;
 
 		const updateZone = () => {
-			config.fields.forEach(field => {
+			fieldsToShow.forEach(field => {
 				const input = div.querySelector(`.inp-${field.key}`);
-				let val = parseFloat(input.value) || 0;
-				if (field.min !== undefined && val < field.min) {
-					val = field.min;
-					input.value = val;
+				if (input) {
+					let val = parseFloat(input.value) || 0;
+					if (field.min !== undefined && val < field.min) {
+						val = field.min;
+						input.value = val;
+					}
+					zone[field.key] = val;
 				}
-				zone[field.key] = val;
 			});
 			if (config.onUpdate) config.onUpdate(zone);
 		};
@@ -1615,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		div.querySelector('.zone-color').addEventListener('input', (e) => { zone.color = e.target.value; });
 		div.querySelector('.zone-name').addEventListener('change', (e) => { zone.name = e.target.value; });
 
-		config.fields.forEach(field => {
+		fieldsToShow.forEach(field => {
 			const input = div.querySelector(`.inp-${field.key}`);
 			input.addEventListener('change', updateZone);
 			input.addEventListener('input', updateZone);
@@ -2167,14 +2282,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	Sim.reset = function() {
 		originalReset();
-		refreshBodyList();
-		refreshZoneList();
-		refreshViscosityZoneList();
-		refreshThermalZoneList();
-		refreshElasticBondList();
-		refreshSolidBarrierList();
-		refreshFieldZoneList();
-		refreshFieldList();
+		if (!isBatchLoading) {
+			refreshBodyList();
+			refreshZoneList();
+			refreshViscosityZoneList();
+			refreshThermalZoneList();
+			refreshElasticBondList();
+			refreshSolidBarrierList();
+			refreshFieldZoneList();
+			refreshFieldList();
+		}
 	};
 	
 	window.App.ui = {

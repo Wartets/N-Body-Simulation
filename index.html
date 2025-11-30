@@ -378,9 +378,15 @@
 			
 			<div class="control-section">
 				<div class="section-header">Periodic Zones</div>
-				<button id="toggleZoneDrawBtn" class="btn secondary">
-					<i class="fa-solid fa-pen-ruler"></i> Draw Zone (Off)
-				</button>
+				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+					<button id="toggleZoneDrawBtn" class="btn secondary">
+						<i class="fa-solid fa-pen-ruler"></i> Draw Zone (Off)
+					</button>
+					<div id="periodicZoneShapeSelector" class="btn-group" style="display: none;">
+						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+					</div>
+				</div>
 				
 				<div id="periodicZonesCollapsible" style="display: none;">
 					<div class="divider-sub"></div>
@@ -397,9 +403,15 @@
 			
 			<div class="control-section">
 				<div class="section-header">Viscosity Zones</div>
-				<button id="toggleViscosityZoneBtn" class="btn secondary">
-					<i class="fa-solid fa-water"></i> Draw Viscosity (Off)
-				</button>
+				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+					<button id="toggleViscosityZoneBtn" class="btn secondary">
+						<i class="fa-solid fa-water"></i> Draw Viscosity (Off)
+					</button>
+					<div id="viscosityZoneShapeSelector" class="btn-group" style="display: none;">
+						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+					</div>
+				</div>
 				
 				<div id="viscosityZonesCollapsible" style="display: none;">
 					<div class="divider-sub"></div>
@@ -416,9 +428,15 @@
 			
 			<div class="control-section">
 				<div class="section-header">Field Zones</div>
-				<button id="toggleFieldZoneToolBtn" class="btn secondary">
-					<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)
-				</button>
+				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+					<button id="toggleFieldZoneToolBtn" class="btn secondary">
+						<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)
+					</button>
+					<div id="fieldZoneShapeSelector" class="btn-group" style="display: none;">
+						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+					</div>
+				</div>
 				
 				<div id="fieldZonesCollapsible" style="display: none;">
 					<div class="divider-sub"></div>
@@ -435,9 +453,15 @@
 			
 			<div class="control-section">
 				<div class="section-header">Thermal Zones</div>
-				<button id="toggleThermalZoneBtn" class="btn secondary">
-					<i class="fa-solid fa-temperature-high"></i> Draw Thermal (Off)
-				</button>
+				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+					<button id="toggleThermalZoneBtn" class="btn secondary">
+						<i class="fa-solid fa-temperature-high"></i> Draw Thermal (Off)
+					</button>
+					<div id="thermalZoneShapeSelector" class="btn-group" style="display: none;">
+						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+					</div>
+				</div>
 				
 				<div id="thermalZonesCollapsible" style="display: none;">
 					<div class="divider-sub"></div>

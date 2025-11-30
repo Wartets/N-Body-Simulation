@@ -43,6 +43,7 @@ const Rendering = {
 	predictionLength: 300,
 
 	drawMode: 'none', 
+	drawShapes: { periodic: 'rectangle', viscosity: 'rectangle', field: 'rectangle', thermal: 'rectangle' },
 	selectedZoneId: null,
 	selectedViscosityZoneId: null,
 	selectedThermalZoneId: null,
@@ -313,24 +314,48 @@ const Rendering = {
 		const handleEnd = (clientX, clientY) => {
 			this.showCoords = false;
 			if ((this.drawMode === 'periodic' || this.drawMode === 'viscosity' || this.drawMode === 'field' || this.drawMode === 'thermal') && this.tempZoneStart && this.tempZoneCurrent) {
-				const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
-				const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
-				const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
-				const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
-				
-				if (w > 5 && h > 5) {
-					if (this.drawMode === 'periodic') {
-						window.App.sim.addPeriodicZone(x, y, w, h);
-						if (window.App.ui && window.App.ui.refreshZones) window.App.ui.refreshZones();
-					} else if (this.drawMode === 'viscosity') {
-						window.App.sim.addViscosityZone(x, y, w, h);
-						if (window.App.ui && window.App.ui.refreshViscosityZones) window.App.ui.refreshViscosityZones();
-					} else if (this.drawMode === 'field') {
-						window.App.sim.addFieldZone(x, y, w, h);
-						if (window.App.ui && window.App.ui.refreshFieldZones) window.App.ui.refreshFieldZones();
-					} else if (this.drawMode === 'thermal') {
-						window.App.sim.addThermalZone(x, y, w, h);
-						if (window.App.ui && window.App.ui.refreshThermalZones) window.App.ui.refreshThermalZones();
+				if (this.drawShapes[this.drawMode] === 'circle') {
+					const cx = this.tempZoneStart.x;
+					const cy = this.tempZoneStart.y;
+					const dx = this.tempZoneCurrent.x - cx;
+					const dy = this.tempZoneCurrent.y - cy;
+					const radius = Math.sqrt(dx * dx + dy * dy);
+
+					if (radius > 2) {
+						if (this.drawMode === 'periodic') {
+							window.App.sim.addPeriodicZone(cx, cy, radius, 0, null, null, 'circle');
+							if (window.App.ui && window.App.ui.refreshZones) window.App.ui.refreshZones();
+						} else if (this.drawMode === 'viscosity') {
+							window.App.sim.addViscosityZone(cx, cy, radius, 0, null, null, 'circle');
+							if (window.App.ui && window.App.ui.refreshViscosityZones) window.App.ui.refreshViscosityZones();
+						} else if (this.drawMode === 'field') {
+							window.App.sim.addFieldZone(cx, cy, radius, 0, null, null, null, null, 'circle');
+							if (window.App.ui && window.App.ui.refreshFieldZones) window.App.ui.refreshFieldZones();
+						} else if (this.drawMode === 'thermal') {
+							window.App.sim.addThermalZone(cx, cy, radius, 0, null, null, null, 'circle');
+							if (window.App.ui && window.App.ui.refreshThermalZones) window.App.ui.refreshThermalZones();
+						}
+					}
+				} else {
+					const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
+					const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
+					const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
+					const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
+					
+					if (w > 5 && h > 5) {
+						if (this.drawMode === 'periodic') {
+							window.App.sim.addPeriodicZone(x, y, w, h);
+							if (window.App.ui && window.App.ui.refreshZones) window.App.ui.refreshZones();
+						} else if (this.drawMode === 'viscosity') {
+							window.App.sim.addViscosityZone(x, y, w, h);
+							if (window.App.ui && window.App.ui.refreshViscosityZones) window.App.ui.refreshViscosityZones();
+						} else if (this.drawMode === 'field') {
+							window.App.sim.addFieldZone(x, y, w, h);
+							if (window.App.ui && window.App.ui.refreshFieldZones) window.App.ui.refreshFieldZones();
+						} else if (this.drawMode === 'thermal') {
+							window.App.sim.addThermalZone(x, y, w, h);
+							if (window.App.ui && window.App.ui.refreshThermalZones) window.App.ui.refreshThermalZones();
+						}
 					}
 				}
 				this.tempZoneStart = null;
@@ -835,38 +860,63 @@ const Rendering = {
 			}
 
 			this.ctx.strokeStyle = color;
+			this.ctx.lineWidth = isSelected ? 3 / this.zoom : 1 / this.zoom;
+			if (isSelected) this.ctx.setLineDash([]);
 			
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+			} else {
+				this.ctx.rect(z.x, z.y, z.width, z.height);
+			}
+			this.ctx.stroke();
+
 			if (isSelected) {
-				this.ctx.lineWidth = 3 / this.zoom;
-				this.ctx.setLineDash([]);
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
 				this.ctx.lineWidth = 1 / this.zoom;
 				this.ctx.setLineDash([5 / this.zoom, 5 / this.zoom]);
-			} else {
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
 			}
 			
 			this.ctx.fillStyle = color; 
 			this.ctx.globalAlpha = z.enabled ? 0.1 : 0.05;
-			this.ctx.fillRect(z.x, z.y, z.width, z.height);
+
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+			} else {
+				this.ctx.rect(z.x, z.y, z.width, z.height);
+			}
+			this.ctx.fill();
 			
 			this.ctx.globalAlpha = z.enabled ? 1.0 : 0.5;
-			this.ctx.font = `${10 / this.zoom}px sans-serif`;
 			this.ctx.fillStyle = color;
-			this.ctx.textAlign = 'left';
-			this.ctx.fillText(z.name + (z.enabled ? '' : ' (Off)'), z.x + 2 / this.zoom, z.y - 4 / this.zoom);
+
+			if (z.shape === 'circle') {
+				this.drawArcText(z.name + (z.enabled ? '' : ' (Off)'), z.x, z.y, z.radius, color);
+			} else {
+				this.ctx.font = `${10 / this.zoom}px sans-serif`;
+				this.ctx.textAlign = 'left';
+				this.ctx.fillText(z.name + (z.enabled ? '' : ' (Off)'), z.x + 2 / this.zoom, z.y - 4 / this.zoom);
+			}
 
 			this.ctx.restore();
 		}
 		
 		if (this.drawMode === 'periodic' && this.tempZoneStart && this.tempZoneCurrent) {
-			const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
-			const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
-			const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
-			const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
-			
 			this.ctx.strokeStyle = '#fff';
-			this.ctx.strokeRect(x, y, w, h);
+			if (this.drawShapes.periodic === 'circle') {
+				const dx = this.tempZoneCurrent.x - this.tempZoneStart.x;
+				const dy = this.tempZoneCurrent.y - this.tempZoneStart.y;
+				const radius = Math.sqrt(dx * dx + dy * dy);
+				this.ctx.beginPath();
+				this.ctx.arc(this.tempZoneStart.x, this.tempZoneStart.y, radius, 0, Math.PI * 2);
+				this.ctx.stroke();
+			} else {
+				const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
+				const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
+				const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
+				const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
+				this.ctx.strokeRect(x, y, w, h);
+			}
 		}
 		
 		this.ctx.setLineDash([]);
@@ -885,38 +935,239 @@ const Rendering = {
 			}
 
 			this.ctx.strokeStyle = color;
+			this.ctx.lineWidth = isSelected ? 3 / this.zoom : 1 / this.zoom;
 			
-			if (isSelected) {
-				this.ctx.lineWidth = 3 / this.zoom;
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
-				this.ctx.lineWidth = 1 / this.zoom;
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
 			} else {
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
+				this.ctx.rect(z.x, z.y, z.width, z.height);
 			}
+			this.ctx.stroke();
 			
 			this.ctx.fillStyle = color; 
 			this.ctx.globalAlpha = z.enabled ? 0.2 : 0.05;
-			this.ctx.fillRect(z.x, z.y, z.width, z.height);
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+			} else {
+				this.ctx.rect(z.x, z.y, z.width, z.height);
+			}
+			this.ctx.fill();
 			
 			this.ctx.globalAlpha = z.enabled ? 1.0 : 0.5;
-			this.ctx.font = `${10 / this.zoom}px sans-serif`;
 			this.ctx.fillStyle = color;
-			this.ctx.textAlign = 'left';
-			this.ctx.fillText(z.name + (z.enabled ? ` (v:${z.viscosity})` : ' (Off)'), z.x + 2 / this.zoom, z.y - 4 / this.zoom);
+
+			const text = z.name + (z.enabled ? ` (v:${z.viscosity})` : ' (Off)');
+			if (z.shape === 'circle') {
+				this.drawArcText(text, z.x, z.y, z.radius, color);
+			} else {
+				this.ctx.font = `${10 / this.zoom}px sans-serif`;
+				this.ctx.textAlign = 'left';
+				this.ctx.fillText(text, z.x + 2 / this.zoom, z.y - 4 / this.zoom);
+			}
 
 			this.ctx.restore();
 		}
 		
 		if (this.drawMode === 'viscosity' && this.tempZoneStart && this.tempZoneCurrent) {
-			const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
-			const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
-			const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
-			const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
-			
 			this.ctx.strokeStyle = '#3498db';
-			this.ctx.strokeRect(x, y, w, h);
 			this.ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
-			this.ctx.fillRect(x, y, w, h);
+
+			if (this.drawShapes.viscosity === 'circle') {
+				const dx = this.tempZoneCurrent.x - this.tempZoneStart.x;
+				const dy = this.tempZoneCurrent.y - this.tempZoneStart.y;
+				const radius = Math.sqrt(dx * dx + dy * dy);
+				this.ctx.beginPath();
+				this.ctx.arc(this.tempZoneStart.x, this.tempZoneStart.y, radius, 0, Math.PI * 2);
+				this.ctx.stroke();
+				this.ctx.fill();
+			} else {
+				const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
+				const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
+				const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
+				const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
+				
+				this.ctx.strokeRect(x, y, w, h);
+				this.ctx.fillRect(x, y, w, h);
+			}
+		}
+	},
+	
+	drawFieldZones: function(zones) {
+		this.ctx.lineWidth = 1 / this.zoom;
+		
+		for (const z of zones) {
+			const isSelected = (z.id === this.selectedFieldZoneId);
+			const color = z.color || '#27ae60';
+
+			this.ctx.save();
+			if (!z.enabled) {
+				this.ctx.globalAlpha = 0.3;
+			}
+
+			this.ctx.strokeStyle = color;
+			this.ctx.lineWidth = isSelected ? 3 / this.zoom : 1 / this.zoom;
+			
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+			} else {
+				this.ctx.rect(z.x, z.y, z.width, z.height);
+			}
+			this.ctx.stroke();
+			
+			this.ctx.fillStyle = color; 
+			this.ctx.globalAlpha = z.enabled ? 0.15 : 0.05;
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+			} else {
+				this.ctx.rect(z.x, z.y, z.width, z.height);
+			}
+			this.ctx.fill();
+			
+			this.ctx.globalAlpha = z.enabled ? 1.0 : 0.5;
+			this.ctx.fillStyle = color;
+
+			if (z.shape === 'circle') {
+				this.drawArcText(z.name + (z.enabled ? '' : ' (Off)'), z.x, z.y, z.radius, color);
+			} else {
+				this.ctx.font = `${10 / this.zoom}px sans-serif`;
+				this.ctx.textAlign = 'left';
+				this.ctx.fillText(z.name + (z.enabled ? '' : ' (Off)'), z.x + 2 / this.zoom, z.y - 4 / this.zoom);
+			}
+
+			let cx, cy;
+			if (z.shape === 'circle') {
+				cx = z.x;
+				cy = z.y;
+			} else {
+				cx = z.x + z.width / 2;
+				cy = z.y + z.height / 2;
+			}
+			const mag = Math.sqrt(z.fx*z.fx + z.fy*z.fy);
+			
+			if (mag > 0.0001) {
+				let arrowLen;
+				if (z.shape === 'circle') {
+					arrowLen = z.radius * 0.8;
+				} else {
+					arrowLen = Math.min(Math.min(z.width, z.height) * 0.4, mag * 200); 
+				}
+				const nx = z.fx / mag;
+				const ny = z.fy / mag;
+				const endX = cx + nx * arrowLen;
+				const endY = cy + ny * arrowLen;
+				
+				this.ctx.beginPath();
+				this.ctx.moveTo(cx, cy);
+				this.ctx.lineTo(endX, endY);
+				this.ctx.stroke();
+				
+				const headSize = 5 / this.zoom;
+				const angle = Math.atan2(ny, nx);
+				this.ctx.beginPath();
+				this.ctx.moveTo(endX, endY);
+				this.ctx.lineTo(endX - headSize * Math.cos(angle - Math.PI/6), endY - headSize * Math.sin(angle - Math.PI/6));
+				this.ctx.moveTo(endX, endY);
+				this.ctx.lineTo(endX - headSize * Math.cos(angle + Math.PI/6), endY - headSize * Math.sin(angle + Math.PI/6));
+				this.ctx.stroke();
+			}
+
+			this.ctx.restore();
+		}
+		
+		if (this.drawMode === 'field' && this.tempZoneStart && this.tempZoneCurrent) {
+			this.ctx.strokeStyle = '#27ae60';
+			this.ctx.fillStyle = 'rgba(39, 174, 96, 0.3)';
+			if (this.drawShapes.field === 'circle') {
+				const dx = this.tempZoneCurrent.x - this.tempZoneStart.x;
+				const dy = this.tempZoneCurrent.y - this.tempZoneStart.y;
+				const radius = Math.sqrt(dx*dx+dy*dy);
+				this.ctx.beginPath();
+				this.ctx.arc(this.tempZoneStart.x, this.tempZoneStart.y, radius, 0, Math.PI * 2);
+				this.ctx.stroke();
+				this.ctx.fill();
+			} else {
+				const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
+				const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
+				const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
+				const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
+				this.ctx.strokeRect(x, y, w, h);
+				this.ctx.fillRect(x, y, w, h);
+			}
+		}
+	},
+	
+	drawThermalZones: function(zones) {
+		this.ctx.lineWidth = 1 / this.zoom;
+		
+		for (const z of zones) {
+			const isSelected = (z.id === this.selectedThermalZoneId);
+			const color = z.color || '#e74c3c';
+
+			this.ctx.save();
+			if (!z.enabled) {
+				this.ctx.globalAlpha = 0.3;
+			}
+
+			this.ctx.strokeStyle = color;
+			this.ctx.lineWidth = isSelected ? 3 / this.zoom : 1 / this.zoom;
+
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+			} else {
+				this.ctx.rect(z.x, z.y, z.width, z.height);
+			}
+			this.ctx.stroke();
+			
+			this.ctx.fillStyle = color; 
+			this.ctx.globalAlpha = z.enabled ? 0.2 : 0.05;
+			this.ctx.beginPath();
+			if (z.shape === 'circle') {
+				this.ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+			} else {
+				this.ctx.rect(z.x, z.y, z.width, z.height);
+			}
+			this.ctx.fill();
+			
+			this.ctx.globalAlpha = z.enabled ? 1.0 : 0.5;
+			this.ctx.fillStyle = color;
+
+			const text = z.name + (z.enabled ? ` (${z.temperature}K)` : ' (Off)');
+			if (z.shape === 'circle') {
+				this.drawArcText(text, z.x, z.y, z.radius, color);
+			} else {
+				this.ctx.font = `${10 / this.zoom}px sans-serif`;
+				this.ctx.textAlign = 'left';
+				this.ctx.fillText(text, z.x + 2 / this.zoom, z.y - 4 / this.zoom);
+			}
+
+			this.ctx.restore();
+		}
+		
+		if (this.drawMode === 'thermal' && this.tempZoneStart && this.tempZoneCurrent) {
+			this.ctx.strokeStyle = '#e74c3c';
+			this.ctx.fillStyle = 'rgba(231, 76, 60, 0.3)';
+			if (this.drawShapes.thermal === 'circle') {
+				const dx = this.tempZoneCurrent.x - this.tempZoneStart.x;
+				const dy = this.tempZoneCurrent.y - this.tempZoneStart.y;
+				const radius = Math.sqrt(dx*dx + dy*dy);
+				this.ctx.beginPath();
+				this.ctx.arc(this.tempZoneStart.x, this.tempZoneStart.y, radius, 0, Math.PI * 2);
+				this.ctx.stroke();
+				this.ctx.fill();
+			} else {
+				const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
+				const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
+				const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
+				const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
+				
+				this.ctx.strokeRect(x, y, w, h);
+				this.ctx.fillRect(x, y, w, h);
+			}
 		}
 	},
 	
@@ -943,129 +1194,6 @@ const Rendering = {
 			this.ctx.moveTo(this.tempBarrierStart.x, this.tempBarrierStart.y);
 			this.ctx.lineTo(this.tempZoneCurrent.x, this.tempZoneCurrent.y);
 			this.ctx.stroke();
-		}
-	},
-	
-	drawFieldZones: function(zones) {
-		this.ctx.lineWidth = 1 / this.zoom;
-		
-		for (const z of zones) {
-			const isSelected = (z.id === this.selectedFieldZoneId);
-			const color = z.color || '#27ae60';
-
-			this.ctx.save();
-			if (!z.enabled) {
-				this.ctx.globalAlpha = 0.3;
-			}
-
-			this.ctx.strokeStyle = color;
-			
-			if (isSelected) {
-				this.ctx.lineWidth = 3 / this.zoom;
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
-				this.ctx.lineWidth = 1 / this.zoom;
-			} else {
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
-			}
-			
-			this.ctx.fillStyle = color; 
-			this.ctx.globalAlpha = z.enabled ? 0.15 : 0.05;
-			this.ctx.fillRect(z.x, z.y, z.width, z.height);
-			
-			this.ctx.globalAlpha = z.enabled ? 1.0 : 0.5;
-			this.ctx.font = `${10 / this.zoom}px sans-serif`;
-			this.ctx.fillStyle = color;
-			this.ctx.textAlign = 'left';
-			this.ctx.fillText(z.name + (z.enabled ? '' : ' (Off)'), z.x + 2 / this.zoom, z.y - 4 / this.zoom);
-
-			const cx = z.x + z.width / 2;
-			const cy = z.y + z.height / 2;
-			const mag = Math.sqrt(z.fx*z.fx + z.fy*z.fy);
-			
-			if (mag > 0.0001) {
-				const scale = 20; 
-				const arrowLen = Math.min(Math.min(z.width, z.height) * 0.4, mag * 200); 
-				const nx = z.fx / mag;
-				const ny = z.fy / mag;
-				const endX = cx + nx * arrowLen;
-				const endY = cy + ny * arrowLen;
-				
-				this.ctx.beginPath();
-				this.ctx.moveTo(cx, cy);
-				this.ctx.lineTo(endX, endY);
-				this.ctx.stroke();
-				
-				const headSize = 5 / this.zoom;
-				const angle = Math.atan2(ny, nx);
-				this.ctx.beginPath();
-				this.ctx.moveTo(endX, endY);
-				this.ctx.lineTo(endX - headSize * Math.cos(angle - Math.PI/6), endY - headSize * Math.sin(angle - Math.PI/6));
-				this.ctx.moveTo(endX, endY);
-				this.ctx.lineTo(endX - headSize * Math.cos(angle + Math.PI/6), endY - headSize * Math.sin(angle + Math.PI/6));
-				this.ctx.stroke();
-			}
-
-			this.ctx.restore();
-		}
-		
-		if (this.drawMode === 'field' && this.tempZoneStart && this.tempZoneCurrent) {
-			const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
-			const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
-			const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
-			const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
-			
-			this.ctx.strokeStyle = '#27ae60';
-			this.ctx.strokeRect(x, y, w, h);
-			this.ctx.fillStyle = 'rgba(39, 174, 96, 0.3)';
-			this.ctx.fillRect(x, y, w, h);
-		}
-	},
-	
-	drawThermalZones: function(zones) {
-		this.ctx.lineWidth = 1 / this.zoom;
-		
-		for (const z of zones) {
-			const isSelected = (z.id === this.selectedThermalZoneId);
-			const color = z.color || '#e74c3c';
-
-			this.ctx.save();
-			if (!z.enabled) {
-				this.ctx.globalAlpha = 0.3;
-			}
-
-			this.ctx.strokeStyle = color;
-			
-			if (isSelected) {
-				this.ctx.lineWidth = 3 / this.zoom;
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
-				this.ctx.lineWidth = 1 / this.zoom;
-			} else {
-				this.ctx.strokeRect(z.x, z.y, z.width, z.height);
-			}
-			
-			this.ctx.fillStyle = color; 
-			this.ctx.globalAlpha = z.enabled ? 0.2 : 0.05;
-			this.ctx.fillRect(z.x, z.y, z.width, z.height);
-			
-			this.ctx.globalAlpha = z.enabled ? 1.0 : 0.5;
-			this.ctx.font = `${10 / this.zoom}px sans-serif`;
-			this.ctx.fillStyle = color;
-			this.ctx.textAlign = 'left';
-			this.ctx.fillText(z.name + (z.enabled ? ` (${z.temperature}K)` : ' (Off)'), z.x + 2 / this.zoom, z.y - 4 / this.zoom);
-
-			this.ctx.restore();
-		}
-		
-		if (this.drawMode === 'thermal' && this.tempZoneStart && this.tempZoneCurrent) {
-			const x = Math.min(this.tempZoneStart.x, this.tempZoneCurrent.x);
-			const y = Math.min(this.tempZoneStart.y, this.tempZoneCurrent.y);
-			const w = Math.abs(this.tempZoneCurrent.x - this.tempZoneStart.x);
-			const h = Math.abs(this.tempZoneCurrent.y - this.tempZoneStart.y);
-			
-			this.ctx.strokeStyle = '#e74c3c';
-			this.ctx.strokeRect(x, y, w, h);
-			this.ctx.fillStyle = 'rgba(231, 76, 60, 0.3)';
-			this.ctx.fillRect(x, y, w, h);
 		}
 	},
 	
@@ -1420,6 +1548,50 @@ const Rendering = {
 		this.ctx.textAlign = 'right';
 		this.ctx.textBaseline = 'bottom';
 		this.ctx.fillText(text, this.width - 10, this.height - 10);
+	},
+	
+	drawArcText: function(text, centerX, centerY, radius, color) {
+		const ctx = this.ctx;
+		ctx.save();
+		ctx.fillStyle = color;
+		const fontSize = Math.max(5, 12 / this.zoom);
+		ctx.font = `${fontSize}px sans-serif`;
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'bottom';
+
+		const effectiveRadius = radius + 5 / this.zoom;
+		
+		const textMetrics = ctx.measureText(text);
+		const textWidth = textMetrics.width;
+
+		const totalAngle = textWidth / effectiveRadius;
+		let startAngle = -Math.PI / 2 - totalAngle / 2;
+
+		if (isNaN(startAngle)) startAngle = -Math.PI / 2;
+
+		ctx.translate(centerX, centerY);
+
+		for (let i = 0; i < text.length; i++) {
+			const char = text[i];
+			const charMetrics = ctx.measureText(char);
+			const charWidth = charMetrics.width;
+			const angleForChar = charWidth / effectiveRadius;
+
+			const rotation = startAngle + angleForChar / 2;
+			
+			if (isNaN(rotation)) continue;
+
+			ctx.save();
+			ctx.rotate(rotation);
+			
+			ctx.fillText(char, 0, -effectiveRadius);
+			
+			ctx.restore();
+			
+			startAngle += angleForChar;
+		}
+
+		ctx.restore();
 	},
 	
 	draw: function() {

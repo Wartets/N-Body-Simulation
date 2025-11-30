@@ -193,36 +193,48 @@ const Simulation = {
 		}
 	},
 
-	addPeriodicZone: function(x, y, w, h, color, type) {
-		this.periodicZones.push({
+	addPeriodicZone: function(x, y, w, h, color, type, shape = 'rectangle') {
+		const zone = {
 			id: Date.now() + Math.random(),
 			name: `Zone ${this.periodicZones.length + 1}`,
+			shape: shape,
 			x: x,
 			y: y,
-			width: w,
-			height: h,
 			color: color || '#e67e22',
 			type: type || 'center',
 			enabled: true
-		});
+		};
+		if (shape === 'circle') {
+			zone.radius = w;
+		} else {
+			zone.width = w;
+			zone.height = h;
+		}
+		this.periodicZones.push(zone);
 	},
 
 	removePeriodicZone: function(id) {
 		this.periodicZones = this.periodicZones.filter(z => z.id !== id);
 	},
 
-	addViscosityZone: function(x, y, w, h, viscosity, color) {
-		this.viscosityZones.push({
+	addViscosityZone: function(x, y, w, h, viscosity, color, shape = 'rectangle') {
+		const zone = {
 			id: Date.now() + Math.random(),
 			name: `Viscosity ${this.viscosityZones.length + 1}`,
+			shape: shape,
 			x: x,
 			y: y,
-			width: w,
-			height: h,
 			viscosity: viscosity || 0.5,
 			color: color || '#3498db',
 			enabled: true
-		});
+		};
+		if (shape === 'circle') {
+			zone.radius = w;
+		} else {
+			zone.width = w;
+			zone.height = h;
+		}
+		this.viscosityZones.push(zone);
 	},
 
 	removeViscosityZone: function(id) {
@@ -296,38 +308,50 @@ const Simulation = {
 		this.solidBarriers = this.solidBarriers.filter(b => b.id !== id);
 	},
 	
-	addFieldZone: function(x, y, w, h, fx, fy, color, name) {
-		this.fieldZones.push({
+	addFieldZone: function(x, y, w, h, fx, fy, color, name, shape = 'rectangle') {
+		const zone = {
 			id: Date.now() + Math.random(),
 			name: name || `Field ${this.fieldZones.length + 1}`,
+			shape: shape,
 			x: x,
 			y: y,
-			width: w,
-			height: h,
 			fx: fx || 0,
 			fy: fy || 0.1,
 			color: color || '#27ae60',
 			enabled: true
-		});
+		};
+		if (shape === 'circle') {
+			zone.radius = w;
+		} else {
+			zone.width = w;
+			zone.height = h;
+		}
+		this.fieldZones.push(zone);
 	},
 	
 	removeFieldZone: function(id) {
 		this.fieldZones = this.fieldZones.filter(z => z.id !== id);
 	},
 	
-	addThermalZone: function(x, y, w, h, temperature, heatTransferCoefficient, color) {
-		this.thermalZones.push({
+	addThermalZone: function(x, y, w, h, temperature, heatTransferCoefficient, color, shape = 'rectangle') {
+		const zone = {
 			id: Date.now() + Math.random(),
 			name: `Thermal ${this.thermalZones.length + 1}`,
+			shape: shape,
 			x: x,
 			y: y,
-			width: w,
-			height: h,
 			temperature: Math.max(0, temperature || 500),
 			heatTransferCoefficient: heatTransferCoefficient || 0.1,
 			color: color || '#e74c3c',
 			enabled: true
-		});
+		};
+		if (shape === 'circle') {
+			zone.radius = w;
+		} else {
+			zone.width = w;
+			zone.height = h;
+		}
+		this.thermalZones.push(zone);
 	},
 	
 	removeThermalZone: function(id) {
@@ -440,8 +464,17 @@ const Simulation = {
 		
 		for (const z of this.viscosityZones) {
 			if (!z.enabled) continue;
-			if (body.x >= z.x && body.x <= z.x + z.width &&
-				body.y >= z.y && body.y <= z.y + z.height) {
+			let isInside = false;
+			if (z.shape === 'circle') {
+				const dx = body.x - z.x;
+				const dy = body.y - z.y;
+				isInside = (dx * dx + dy * dy) <= (z.radius * z.radius);
+			} else {
+				isInside = (body.x >= z.x && body.x <= z.x + z.width &&
+							body.y >= z.y && body.y <= z.y + z.height);
+			}
+			
+			if (isInside) {
 				const fx = -body.vx * z.viscosity;
 				const fy = -body.vy * z.viscosity;
 				body.ax += fx * body.invMass;
@@ -451,8 +484,17 @@ const Simulation = {
 
 		for (const z of this.fieldZones) {
 			if (!z.enabled) continue;
-			if (body.x >= z.x && body.x <= z.x + z.width &&
-				body.y >= z.y && body.y <= z.y + z.height) {
+			let isInside = false;
+			if (z.shape === 'circle') {
+				const dx = body.x - z.x;
+				const dy = body.y - z.y;
+				isInside = (dx * dx + dy * dy) <= (z.radius * z.radius);
+			} else {
+				isInside = (body.x >= z.x && body.x <= z.x + z.width &&
+							body.y >= z.y && body.y <= z.y + z.height);
+			}
+
+			if (isInside) {
 				body.ax += z.fx;
 				body.ay += z.fy;
 			}
@@ -662,33 +704,72 @@ const Simulation = {
 		for (const z of this.periodicZones) {
 			if (!z.enabled) continue;
 
-			const left = z.x;
-			const right = z.x + z.width;
-			const top = z.y;
-			const bottom = z.y + z.height;
-			const offset = (z.type === 'radius') ? b.radius : 0;
-			
-			const inY = (prevY >= top - offset && prevY <= bottom + offset);
-			
-			if (inY) {
-				if (prevX <= right + offset && b.x > right + offset) {
-					b.x -= z.width;
-					didWrap = true;
-				} else if (prevX >= left - offset && b.x < left - offset) {
-					b.x += z.width;
+			if (z.shape === 'circle') {
+				const dx = b.x - z.x;
+				const dy = b.y - z.y;
+				const dist = Math.sqrt(dx*dx + dy*dy);
+				
+				const prevDx = prevX - z.x;
+				const prevDy = prevY - z.y;
+				const prevDist = Math.sqrt(prevDx*prevDx + prevDy*prevDy);
+
+				const boundaryDist = (z.type === 'radius') ? z.radius - b.radius : z.radius;
+
+				if (boundaryDist > 0 && dist > boundaryDist && prevDist <= boundaryDist) {
+					const nx = dx / dist;
+					const ny = dy / dist;
+
+					if (z.type === 'radius') {
+						const wrapDist = z.radius - b.radius;
+						b.x = z.x - wrapDist * nx;
+						b.y = z.y - wrapDist * ny;
+					} else {
+						b.x -= 2 * dx;
+						b.y -= 2 * dy;
+					}
 					didWrap = true;
 				}
-			}
-			
-			const inX = (prevX >= left - offset && prevX <= right + offset);
-			
-			if (inX) {
-				if (prevY <= bottom + offset && b.y > bottom + offset) {
-					b.y -= z.height;
-					didWrap = true;
-				} else if (prevY >= top - offset && b.y < top - offset) {
-					b.y += z.height;
-					didWrap = true;
+			} else {
+				const left = z.x;
+				const right = z.x + z.width;
+				const top = z.y;
+				const bottom = z.y + z.height;
+				const offset = (z.type === 'radius') ? b.radius : 0;
+
+				if (prevY + offset > top && prevY - offset < bottom) {
+					if (prevX + offset <= right && b.x + offset > right) {
+						if (z.type === 'radius') {
+							b.x = left + b.radius;
+						} else {
+							b.x -= z.width;
+						}
+						didWrap = true;
+					} else if (prevX - offset >= left && b.x - offset < left) {
+						if (z.type === 'radius') {
+							b.x = right - b.radius;
+						} else {
+							b.x += z.width;
+						}
+						didWrap = true;
+					}
+				}
+
+				if (prevX + offset > left && prevX - offset < right) {
+					if (prevY + offset <= bottom && b.y + offset > bottom) {
+						if (z.type === 'radius') {
+							b.y = top + b.radius;
+						} else {
+							b.y -= z.height;
+						}
+						didWrap = true;
+					} else if (prevY - offset >= top && b.y - offset < top) {
+						if (z.type === 'radius') {
+							b.y = bottom - b.radius;
+						} else {
+							b.y += z.height;
+						}
+						didWrap = true;
+					}
 				}
 			}
 		}
@@ -1119,7 +1200,7 @@ const Simulation = {
 		this.computeBonds(bodies, dt);
 		this.computeLongRangeInteractions(bodies);
 		this.computeShortRangeInteractions(bodies);
-	
+
 		for (let i = 0; i < count; i++) {
 			const b = bodies[i];
 			
@@ -1164,7 +1245,17 @@ const Simulation = {
 				}
 
 				for (const z of this.thermalZones) {
-					if (z.enabled && b.x >= z.x && b.x <= z.x + z.width && b.y >= z.y && b.y <= z.y + z.height) {
+					if (!z.enabled) continue;
+					let isInside = false;
+					if (z.shape === 'circle') {
+						const dx = b.x - z.x;
+						const dy = b.y - z.y;
+						isInside = (dx * dx + dy * dy) <= (z.radius * z.radius);
+					} else {
+						isInside = (b.x >= z.x && b.x <= z.x + z.width && b.y >= z.y && b.y <= z.y + z.height);
+					}
+
+					if (isInside) {
 						const dT = (z.temperature - b.temperature) * (1 - Math.exp(-z.heatTransferCoefficient * dt));
 						b.temperature += dT;
 						if (b.temperature < 0) b.temperature = 0;

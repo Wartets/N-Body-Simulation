@@ -175,6 +175,128 @@ class Body {
 	}
 };
 
+window.App.QuadTree = class QuadTree {
+	constructor(x, y, w, h, maxBodies = 1, depth = 0) {
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+		this.maxBodies = maxBodies;
+		this.depth = depth;
+		this.bodies = [];
+		this.nodes = [];
+		this.mass = 0;
+		this.comX = 0;
+		this.comY = 0;
+		this.charge = 0;
+		this.magMoment = 0;
+	}
+
+	insert(body) {
+		if (this.nodes.length > 0) {
+			const index = this.getIndex(body);
+			if (index !== -1) {
+				this.nodes[index].insert(body);
+				return;
+			}
+		}
+
+		this.bodies.push(body);
+
+		if (this.bodies.length > this.maxBodies && this.depth < 10) {
+			if (this.nodes.length === 0) {
+				this.split();
+			}
+
+			let i = 0;
+			while (i < this.bodies.length) {
+				const b = this.bodies[i];
+				const index = this.getIndex(b);
+				if (index !== -1) {
+					this.nodes[index].insert(b);
+					this.bodies.splice(i, 1);
+				} else {
+					i++;
+				}
+			}
+		}
+	}
+
+	getIndex(body) {
+		const vMid = this.x + this.w / 2;
+		const hMid = this.y + this.h / 2;
+		const top = body.y < hMid;
+		const bottom = body.y >= hMid;
+
+		if (body.x < vMid) {
+			if (top) return 0;
+			if (bottom) return 2;
+		} else if (body.x >= vMid) {
+			if (top) return 1;
+			if (bottom) return 3;
+		}
+		return -1;
+	}
+
+	split() {
+		const subW = this.w / 2;
+		const subH = this.h / 2;
+		const x = this.x;
+		const y = this.y;
+
+		this.nodes[0] = new window.App.QuadTree(x, y, subW, subH, this.maxBodies, this.depth + 1);
+		this.nodes[1] = new window.App.QuadTree(x + subW, y, subW, subH, this.maxBodies, this.depth + 1);
+		this.nodes[2] = new window.App.QuadTree(x, y + subH, subW, subH, this.maxBodies, this.depth + 1);
+		this.nodes[3] = new window.App.QuadTree(x + subW, y + subH, subW, subH, this.maxBodies, this.depth + 1);
+	}
+
+	calculateMultipoles() {
+		let totalMass = 0;
+		let totalMassX = 0;
+		let totalMassY = 0;
+		let totalCharge = 0;
+		let totalMag = 0;
+
+		if (this.nodes.length > 0) {
+			for (let i = 0; i < this.nodes.length; i++) {
+				this.nodes[i].calculateMultipoles();
+				const n = this.nodes[i];
+				if (n.mass > 0) {
+					totalMass += n.mass;
+					totalMassX += n.comX * n.mass;
+					totalMassY += n.comY * n.mass;
+				}
+				totalCharge += n.charge;
+				totalMag += n.magMoment;
+			}
+		}
+
+		for (let i = 0; i < this.bodies.length; i++) {
+			const b = this.bodies[i];
+			const m = b.mass === -1 ? 1 : b.mass;
+			if (m > 0) {
+				totalMass += m;
+				totalMassX += b.x * m;
+				totalMassY += b.y * m;
+			}
+			totalCharge += b.charge;
+			totalMag += b.magMoment;
+		}
+
+		this.mass = totalMass;
+		this.charge = totalCharge;
+		this.magMoment = totalMag;
+
+		if (totalMass > 0) {
+			this.comX = totalMassX / totalMass;
+			this.comY = totalMassY / totalMass;
+		} else {
+			this.comX = this.x + this.w / 2;
+			this.comY = this.y + this.h / 2;
+		}
+	}
+};
+
 const Simulation = {
 	bodies: [],
 	periodicZones: [],
@@ -189,8 +311,12 @@ const Simulation = {
 	fieldZones: [],
 	
 	T_ambient: 3.0,
-	fragmentLifetime: -1,
+	fragmentLifetime: 60,
 	dt: 0.25,
+	
+	useBarnesHut: true,
+	barnesHutTheta: 0.5,
+	quadTree: null,
 	
 	units: {
 		SI: {
@@ -1374,8 +1500,7 @@ const Simulation = {
 	
 	computeLongRangeInteractions: function(bodies) {
 		if (!this.enableGravity && !this.enableElectricity && !this.enableMagnetism) return;
-	
-		const count = bodies.length;
+
 		const G = this.units.sim.G;
 		const Ke = this.units.sim.Ke;
 		const Km = this.units.sim.Km;
@@ -1383,96 +1508,205 @@ const Simulation = {
 		const enableElec = this.enableElectricity;
 		const enableMag = this.enableMagnetism;
 		const enableFrag = this.enableFragmentation;
+		const theta = this.barnesHutTheta;
 
-		for (let i = 0; i < count; i++) {
-			const b1 = bodies[i];
-			if (!b1.active) continue;
-			const m1 = b1.mass === -1 ? 1 : b1.mass;
+		if (this.useBarnesHut) {
+			let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+			for (const b of bodies) {
+				if (!b.active) continue;
+				if (b.x < minX) minX = b.x;
+				if (b.x > maxX) maxX = b.x;
+				if (b.y < minY) minY = b.y;
+				if (b.y > maxY) maxY = b.y;
+			}
+
+			const padding = 100;
+			const w = (maxX - minX) + padding * 2;
+			const h = (maxY - minY) + padding * 2;
+			const size = Math.max(w, h);
 			
-			if (m1 === 0 && b1.charge === 0 && b1.magMoment === 0) continue;
+			this.quadTree = new window.App.QuadTree(minX - padding, minY - padding, size, size);
+			for (const b of bodies) {
+				if (b.active && (b.mass !== 0 || b.charge !== 0 || b.magMoment !== 0)) {
+					this.quadTree.insert(b);
+				}
+			}
+			this.quadTree.calculateMultipoles();
 
-			const x1 = b1.x;
-			const y1 = b1.y;
-			const q1 = b1.charge;
-			const mag1 = b1.magMoment;
-			const invM1 = b1.invMass;
-			const dynamic1 = b1.mass !== -1;
-			
-			let fx1 = 0;
-			let fy1 = 0;
-
-			for (let j = i + 1; j < count; j++) {
-				const b2 = bodies[j];
-				if (!b2.active) continue;
-				const dx = b2.x - x1;
-				const dy = b2.y - y1;
-				const distSq = dx*dx + dy*dy;
-	
-				if (distSq < 1e-9) continue;
-
+			const processNode = (b1, node) => {
+				const dx = node.comX - b1.x;
+				const dy = node.comY - b1.y;
+				const distSq = dx * dx + dy * dy;
 				const dist = Math.sqrt(distSq);
-				const invDist = 1.0 / dist;
-				const invDistSq = invDist * invDist;
-	
-				let f_total = 0;
-				const m2 = b2.mass === -1 ? 1 : b2.mass; 
-	
-				if (enableGrav) {
-					if (!this.isBodyInNullZone(b1, 'gravity') && !this.isBodyInNullZone(b2, 'gravity')) {
-						f_total += (G * m1 * m2) * invDistSq;
+				
+				if (dist < 1e-9) return;
 
-						if (enableFrag) {
-							let effIntegrity1 = b1.integrity;
-							let effIntegrity2 = b2.integrity;
+				const s = node.w;
+				const isLeaf = node.nodes.length === 0;
 
-							if (this.enableThermodynamics) {
-								if (b1.Y_base > 0) effIntegrity1 *= (b1.Y_current / b1.Y_base);
-								if (b2.Y_base > 0) effIntegrity2 *= (b2.Y_current / b2.Y_base);
+				if (isLeaf || (s / dist < theta)) {
+					if (isLeaf) {
+						for (const b2 of node.bodies) {
+							if (b1 === b2) continue;
+							
+							const pdx = b2.x - b1.x;
+							const pdy = b2.y - b1.y;
+							const pDistSq = pdx*pdx + pdy*pdy;
+							if (pDistSq < 1e-9) continue;
+							const pDist = Math.sqrt(pDistSq);
+							const invPDist = 1.0 / pDist;
+							const invPDistSq = invPDist * invPDist;
+
+							let f_total = 0;
+							const m1 = b1.mass === -1 ? 1 : b1.mass;
+							const m2 = b2.mass === -1 ? 1 : b2.mass;
+
+							if (enableGrav && !this.isBodyInNullZone(b1, 'gravity')) {
+								f_total += (G * m1 * m2) * invPDistSq;
+								
+								if (enableFrag && b1.mass !== -1 && b1.fragCooldown <= 0) {
+									let effIntegrity1 = b1.integrity;
+									if (this.enableThermodynamics && b1.Y_base > 0) effIntegrity1 *= (b1.Y_current / b1.Y_base);
+									const tidalForce = (2 * G * m2 * m1 * b1.radius) / (pDistSq * pDist);
+									if (tidalForce > effIntegrity1) this.fragmentationQueue.push(b1);
+								}
+							}
+							if (enableElec && !this.isBodyInNullZone(b1, 'electricity')) {
+								f_total -= (Ke * b1.charge * b2.charge) * invPDistSq;
+							}
+							if (enableMag && !this.isBodyInNullZone(b1, 'magnetism')) {
+								f_total -= (Km * b1.magMoment * b2.magMoment) * (invPDistSq * invPDist);
 							}
 
-							if (dynamic1 && b1.fragCooldown <= 0) {
-								const tidalForce = (2 * G * m2 * m1 * b1.radius) / (distSq * dist);
-								if (tidalForce > effIntegrity1) this.fragmentationQueue.push(b1);
-							}
-							if (b2.mass !== -1 && b2.fragCooldown <= 0) {
-								const tidalForce = (2 * G * m1 * m2 * b2.radius) / (distSq * dist);
-								if (tidalForce > effIntegrity2) this.fragmentationQueue.push(b2);
-							}
+							const f_eff = f_total * invPDist;
+							b1.ax += f_eff * pdx * b1.invMass;
+							b1.ay += f_eff * pdy * b1.invMass;
+						}
+					} else {
+						let f_total = 0;
+						const m1 = b1.mass === -1 ? 1 : b1.mass;
+						const invDist = 1.0 / dist;
+						const invDistSq = invDist * invDist;
+
+						if (enableGrav && node.mass > 0 && !this.isBodyInNullZone(b1, 'gravity')) {
+							f_total += (G * m1 * node.mass) * invDistSq;
+						}
+						if (enableElec && node.charge !== 0 && !this.isBodyInNullZone(b1, 'electricity')) {
+							f_total -= (Ke * b1.charge * node.charge) * invDistSq;
+						}
+						if (enableMag && node.magMoment !== 0 && !this.isBodyInNullZone(b1, 'magnetism')) {
+							f_total -= (Km * b1.magMoment * node.magMoment) * (invDistSq * invDist);
+						}
+
+						const f_eff = f_total * invDist;
+						b1.ax += f_eff * dx * b1.invMass;
+						b1.ay += f_eff * dy * b1.invMass;
+					}
+				} else {
+					for (const child of node.nodes) {
+						if (child.mass > 0 || child.charge !== 0 || child.magMoment !== 0) {
+							processNode(b1, child);
 						}
 					}
 				}
-	
-				if (enableElec && q1 !== 0 && b2.charge !== 0) {
-					if (!this.isBodyInNullZone(b1, 'electricity') && !this.isBodyInNullZone(b2, 'electricity')) {
-						f_total -= (Ke * q1 * b2.charge) * invDistSq;
+			};
+
+			for (const b1 of bodies) {
+				if (!b1.active || b1.mass === -1) continue;
+				processNode(b1, this.quadTree);
+			}
+
+		} else {
+			const count = bodies.length;
+			for (let i = 0; i < count; i++) {
+				const b1 = bodies[i];
+				if (!b1.active) continue;
+				const m1 = b1.mass === -1 ? 1 : b1.mass;
+				if (m1 === 0 && b1.charge === 0 && b1.magMoment === 0) continue;
+
+				const x1 = b1.x;
+				const y1 = b1.y;
+				const q1 = b1.charge;
+				const mag1 = b1.magMoment;
+				const invM1 = b1.invMass;
+				const dynamic1 = b1.mass !== -1;
+				
+				let fx1 = 0;
+				let fy1 = 0;
+
+				for (let j = i + 1; j < count; j++) {
+					const b2 = bodies[j];
+					if (!b2.active) continue;
+					const dx = b2.x - x1;
+					const dy = b2.y - y1;
+					const distSq = dx*dx + dy*dy;
+		
+					if (distSq < 1e-9) continue;
+
+					const dist = Math.sqrt(distSq);
+					const invDist = 1.0 / dist;
+					const invDistSq = invDist * invDist;
+		
+					let f_total = 0;
+					const m2 = b2.mass === -1 ? 1 : b2.mass; 
+		
+					if (enableGrav) {
+						if (!this.isBodyInNullZone(b1, 'gravity') && !this.isBodyInNullZone(b2, 'gravity')) {
+							f_total += (G * m1 * m2) * invDistSq;
+
+							if (enableFrag) {
+								let effIntegrity1 = b1.integrity;
+								let effIntegrity2 = b2.integrity;
+
+								if (this.enableThermodynamics) {
+									if (b1.Y_base > 0) effIntegrity1 *= (b1.Y_current / b1.Y_base);
+									if (b2.Y_base > 0) effIntegrity2 *= (b2.Y_current / b2.Y_base);
+								}
+
+								if (dynamic1 && b1.fragCooldown <= 0) {
+									const tidalForce = (2 * G * m2 * m1 * b1.radius) / (distSq * dist);
+									if (tidalForce > effIntegrity1) this.fragmentationQueue.push(b1);
+								}
+								if (b2.mass !== -1 && b2.fragCooldown <= 0) {
+									const tidalForce = (2 * G * m1 * m2 * b2.radius) / (distSq * dist);
+									if (tidalForce > effIntegrity2) this.fragmentationQueue.push(b2);
+								}
+							}
+						}
 					}
-				}
-	
-				if (enableMag && mag1 !== 0 && b2.magMoment !== 0) {
-					if (!this.isBodyInNullZone(b1, 'magnetism') && !this.isBodyInNullZone(b2, 'magnetism')) {
-						f_total -= (Km * mag1 * b2.magMoment) * (invDistSq * invDist);
+		
+					if (enableElec && q1 !== 0 && b2.charge !== 0) {
+						if (!this.isBodyInNullZone(b1, 'electricity') && !this.isBodyInNullZone(b2, 'electricity')) {
+							f_total -= (Ke * q1 * b2.charge) * invDistSq;
+						}
+					}
+		
+					if (enableMag && mag1 !== 0 && b2.magMoment !== 0) {
+						if (!this.isBodyInNullZone(b1, 'magnetism') && !this.isBodyInNullZone(b2, 'magnetism')) {
+							f_total -= (Km * mag1 * b2.magMoment) * (invDistSq * invDist);
+						}
+					}
+					
+					if (f_total !== 0) {
+						const f_eff = f_total * invDist;
+						const fx = f_eff * dx;
+						const fy = f_eff * dy;
+			
+						if (dynamic1) {
+							fx1 += fx;
+							fy1 += fy;
+						}
+						if (b2.mass !== -1) {
+							b2.ax -= fx * b2.invMass;
+							b2.ay -= fy * b2.invMass;
+						}
 					}
 				}
 				
-				if (f_total !== 0) {
-					const f_eff = f_total * invDist;
-					const fx = f_eff * dx;
-					const fy = f_eff * dy;
-		
-					if (dynamic1) {
-						fx1 += fx;
-						fy1 += fy;
-					}
-					if (b2.mass !== -1) {
-						b2.ax -= fx * b2.invMass;
-						b2.ay -= fy * b2.invMass;
-					}
+				if (dynamic1) {
+					b1.ax += fx1 * invM1;
+					b1.ay += fy1 * invM1;
 				}
-			}
-			
-			if (dynamic1) {
-				b1.ax += fx1 * invM1;
-				b1.ay += fy1 * invM1;
 			}
 		}
 	},

@@ -1776,89 +1776,105 @@ const Simulation = {
 		const dt = stepDt;
 		const cellSize = this.cellSize;
 
-		for (let step = 0; step < numSteps; step++) {
-			const predictedTime = (this.tickCount + 1 + step) * dt;
-			for (let i = 0; i < count; i++) {
-				const b = tempBodies[i];
-				if (!b.active) continue;
+		const originalQueue = this.fragmentationQueue;
+		this.fragmentationQueue = [];
 
-				if (b.mass === -1) {
-					b.ax = 0;
-					b.ay = 0;
-					continue;
+		try {
+			for (let step = 0; step < numSteps; step++) {
+				const predictedTime = (this.tickCount + 1 + step) * dt;
+				for (let i = 0; i < count; i++) {
+					const b = tempBodies[i];
+					if (!b.active) continue;
+
+					if (b.mass === -1) {
+						b.ax = 0;
+						b.ay = 0;
+						continue;
+					}
+					this.computeExternalForces(b, predictedTime);
 				}
-				this.computeExternalForces(b, predictedTime);
-			}
 
-			this.computeBonds(tempBodies, dt, predictedTime);
+				this.computeBonds(tempBodies, dt, predictedTime);
 
-			const tempGrid = {};
-			for (let i = 0; i < count; i++) {
-				const b = tempBodies[i];
-				if (!b.active) continue;
-				const gridX = Math.floor(b.x / cellSize);
-				const gridY = Math.floor(b.y / cellSize);
-				const key = `${gridX},${gridY}`;
-				if (!tempGrid[key]) {
-					tempGrid[key] = [];
+				const tempGrid = {};
+				for (let i = 0; i < count; i++) {
+					const b = tempBodies[i];
+					if (!b.active) continue;
+					const gridX = Math.floor(b.x / cellSize);
+					const gridY = Math.floor(b.y / cellSize);
+					const key = `${gridX},${gridY}`;
+					if (!tempGrid[key]) {
+						tempGrid[key] = [];
+					}
+					tempGrid[key].push(i);
 				}
-				tempGrid[key].push(i);
-			}
-	
-			this.computeLongRangeInteractions(tempBodies);
-			this.computeShortRangeInteractions(tempBodies, tempGrid);
+		
+				this.computeLongRangeInteractions(tempBodies);
+				this.computeShortRangeInteractions(tempBodies, tempGrid);
 
-			let targetJumped = false;
-			let targetAnnihilated = false;
+				let targetJumped = false;
+				let targetAnnihilated = false;
+				let targetFragmented = false;
 
-			for (let i = 0; i < count; i++) {
-				const b = tempBodies[i];
-				if (!b.active) continue;
+				if (this.enableFragmentation) {
+					const targetClone = tempBodies[currentTargetIndex];
+					if (this.fragmentationQueue.includes(targetClone)) {
+						targetFragmented = true;
+					}
+					this.fragmentationQueue.length = 0;
+				}
 
-				const wrapped = this.integrateBody(b, dt);
+				for (let i = 0; i < count; i++) {
+					const b = tempBodies[i];
+					if (!b.active) continue;
 
-				if (i === currentTargetIndex && wrapped) {
-					targetJumped = true;
+					const wrapped = this.integrateBody(b, dt);
+
+					if (i === currentTargetIndex && wrapped) {
+						targetJumped = true;
+					}
+					
+					let annihilated = false;
+					for (const z of this.annihilationZones) {
+						if (!z.enabled) continue;
+						let isInside = false;
+						if (z.shape === 'circle') {
+							const dx = b.x - z.x;
+							const dy = b.y - z.y;
+							isInside = (dx * dx + dy * dy) <= (z.radius * z.radius);
+						} else {
+							const x_in = (z.width === 'inf') || (b.x >= z.x && b.x <= z.x + z.width);
+							const y_in = (z.height === 'inf') || (b.y >= z.y && b.y <= z.y + z.height);
+							isInside = x_in && y_in;
+						}
+
+						if (isInside) {
+							if (i === currentTargetIndex) {
+								targetAnnihilated = true;
+							} else if (i < currentTargetIndex) {
+								currentTargetIndex--;
+							}
+							
+							tempBodies.splice(i, 1);
+							count--;
+							i--;
+							annihilated = true;
+							break;
+						}
+					}
+					if (annihilated) continue;
 				}
 				
-				let annihilated = false;
-				for (const z of this.annihilationZones) {
-					if (!z.enabled) continue;
-					let isInside = false;
-					if (z.shape === 'circle') {
-						const dx = b.x - z.x;
-						const dy = b.y - z.y;
-						isInside = (dx * dx + dy * dy) <= (z.radius * z.radius);
-					} else {
-						const x_in = (z.width === 'inf') || (b.x >= z.x && b.x <= z.x + z.width);
-						const y_in = (z.height === 'inf') || (b.y >= z.y && b.y <= z.y + z.height);
-						isInside = x_in && y_in;
-					}
-
-					if (isInside) {
-						if (i === currentTargetIndex) {
-							targetAnnihilated = true;
-						} else if (i < currentTargetIndex) {
-							currentTargetIndex--;
-						}
-						
-						tempBodies.splice(i, 1);
-						count--;
-						i--;
-						annihilated = true;
-						break;
-					}
+				if (targetFragmented || targetAnnihilated) {
+					break;
 				}
-				if (annihilated) continue;
+				
+				const targetBody = tempBodies[currentTargetIndex];
+				if (!targetBody) break;
+				predictedPath.push({ x: targetBody.x, y: targetBody.y, jump: targetJumped });
 			}
-			
-			if (targetAnnihilated) {
-				break;
-			}
-			
-			const targetBody = tempBodies[currentTargetIndex];
-			if (!targetBody) break;
-			predictedPath.push({ x: targetBody.x, y: targetBody.y, jump: targetJumped });
+		} finally {
+			this.fragmentationQueue = originalQueue;
 		}
 
 		tempBodies.forEach(b => window.App.BodyPool.release(b));

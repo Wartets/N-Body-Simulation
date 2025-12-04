@@ -225,270 +225,94 @@ document.addEventListener('DOMContentLoaded', () => {
 		window.addEventListener('touchend', endDrag);
 	};
 	
+	const mkZoneCfg = (listId, colId, cntId, arr, rm, col, actId, setActId, flds, xtra, setup) => ({
+		listContainer: document.getElementById(listId),
+		collapsible: document.getElementById(colId),
+		countSpan: document.getElementById(cntId),
+		zones: () => Sim[arr],
+		removeFunc: Sim[rm].bind(Sim),
+		cardConfig: { defaultColor: col, activeId: () => Render[actId], setActiveId: (id) => { Render[actId] = id; }, fields: flds, extra: xtra, setupExtra: setup }
+	});
+
 	const zoneConfigs = {
-		periodicZone: {
-			listContainer: zonesListContainer,
-			collapsible: document.getElementById('periodicZonesCollapsible'),
-			countSpan: document.getElementById('periodicZoneListCount'),
-			zones: () => Sim.periodicZones,
-			removeFunc: Sim.removePeriodicZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#e67e22',
-				activeId: () => Render.selectedZoneId,
-				setActiveId: (id) => { Render.selectedZoneId = id; },
-				fields: [
-					{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' },
-					{ label: 'Width', key: 'width', min: 1, tooltip: `Width of the zone. Set to 'inf' for infinite.` }, 
-					{ label: 'Height', key: 'height', min: 1, tooltip: `Height of the zone. Set to 'inf' for infinite.` }
-				],
-				extra: (zone) => `
-					<div class="mini-input-group" style="margin-top:4px;">
-						<label>Trigger Mode</label>
-						<select class="inp-ztype" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid #3a3a3a; color:#e0e0e0; font-size:10px; border-radius:2px;">
-							<option value="center" ${zone.type === 'center' ? 'selected' : ''}>Center (Default)</option>
-							<option value="radius" ${zone.type === 'radius' ? 'selected' : ''}>Radius (Edges)</option>
-						</select>
-					</div>`,
-				setupExtra: (div, zone) => {
-					div.querySelector('.inp-ztype').addEventListener('change', (e) => { zone.type = e.target.value; });
-				}
+		periodicZone: mkZoneCfg('zonesListContainer', 'periodicZonesCollapsible', 'periodicZoneListCount', 'periodicZones', 'removePeriodicZone', '#e67e22', 'selectedZoneId', 'selectedZoneId', 
+			[{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' }, { label: 'Width', key: 'width', min: 1, tooltip: `Set 'inf' for infinite.` }, { label: 'Height', key: 'height', min: 1, tooltip: `Set 'inf' for infinite.` }],
+			(z) => `<div class="mini-input-group" style="margin-top:4px;"><label>Trigger Mode</label><select class="inp-ztype" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid #3a3a3a; color:#e0e0e0; font-size:10px; border-radius:2px;"><option value="center" ${z.type === 'center' ? 'selected' : ''}>Center</option><option value="radius" ${z.type === 'radius' ? 'selected' : ''}>Radius</option></select></div>`,
+			(d, z) => d.querySelector('.inp-ztype').addEventListener('change', e => z.type = e.target.value)
+		),
+		viscosityZone: mkZoneCfg('viscosityZonesListContainer', 'viscosityZonesCollapsible', 'viscosityZoneListCount', 'viscosityZones', 'removeViscosityZone', '#3498db', 'selectedViscosityZoneId', 'selectedViscosityZoneId',
+			[{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' }, { label: 'Width', key: 'width', min: 1 }, { label: 'Height', key: 'height', min: 1 }],
+			(z) => `<div class="mini-input-group" style="margin-top:4px;"><label>Viscosity</label><input type="number" class="inp-viscosity" value="${z.viscosity.toFixed(2)}" step="0.01"></div>`,
+			(d, z) => { const i = d.querySelector('.inp-viscosity'); const h = () => z.viscosity = parseFloat(i.value)||0; i.addEventListener('change', h); i.addEventListener('input', h); setupInteractiveLabel(i.previousElementSibling, i); }
+		),
+		fieldZone: mkZoneCfg('fieldZonesListContainer', 'fieldZonesCollapsible', 'fieldZoneListCount', 'fieldZones', 'removeFieldZone', '#27ae60', 'selectedFieldZoneId', 'selectedFieldZoneId',
+			[{ label: 'Pos X', key: 'x' }, { label: 'Pos Y', key: 'y' }, { label: 'W', key: 'width', min: 1 }, { label: 'H', key: 'height', min: 1 }, { label: 'Acc X', key: 'fx', prec: 3, step: 0.01 }, { label: 'Acc Y', key: 'fy', prec: 3, step: 0.01 }]
+		),
+		thermalZone: mkZoneCfg('thermalZonesListContainer', 'thermalZonesCollapsible', 'thermalZoneListCount', 'thermalZones', 'removeThermalZone', '#e74c3c', 'selectedThermalZoneId', 'selectedThermalZoneId',
+			[{ label: 'Pos X', key: 'x' }, { label: 'Pos Y', key: 'y' }, { label: 'W', key: 'width', min: 1 }, { label: 'H', key: 'height', min: 1 }],
+			(z) => `<div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:4px;"><div class="mini-input-group"><label>Temp (K)</label><input type="number" class="inp-temperature" value="${z.temperature.toFixed(0)}"></div><div class="mini-input-group"><label>Heat Trans.</label><input type="number" class="inp-htc" value="${z.heatTransferCoefficient.toFixed(2)}" step="0.01"></div></div>`,
+			(d, z) => {
+				const t = d.querySelector('.inp-temperature'), h = d.querySelector('.inp-htc');
+				const fn = () => { z.temperature = Math.max(0, parseFloat(t.value)||0); z.heatTransferCoefficient = parseFloat(h.value)||0; };
+				[t, h].forEach(e => { e.addEventListener('change', fn); e.addEventListener('input', fn); setupInteractiveLabel(e.previousElementSibling, e); });
 			}
-		},
-		viscosityZone: {
-			listContainer: viscosityZonesListContainer,
-			collapsible: document.getElementById('viscosityZonesCollapsible'),
-			countSpan: document.getElementById('viscosityZoneListCount'),
-			zones: () => Sim.viscosityZones,
-			removeFunc: Sim.removeViscosityZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#3498db',
-				activeId: () => Render.selectedViscosityZoneId,
-				setActiveId: (id) => { Render.selectedViscosityZoneId = id; },
-				fields: [
-					{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' },
-					{ label: 'Width', key: 'width', min: 1, tooltip: `Width of the zone. Set to 'inf' for infinite.` }, 
-					{ label: 'Height', key: 'height', min: 1, tooltip: `Height of the zone. Set to 'inf' for infinite.` }
-				],
-				extra: (zone) => `
-					<div class="mini-input-group" style="margin-top:4px;">
-						<label>Viscosity Coeff.</label>
-						<input type="number" class="inp-viscosity" value="${zone.viscosity.toFixed(2)}" step="0.01">
-					</div>`,
-				setupExtra: (div, zone) => {
-					const inp = div.querySelector('.inp-viscosity');
-					const handler = () => { zone.viscosity = parseFloat(inp.value) || 0; };
-					inp.addEventListener('change', handler);
-					inp.addEventListener('input', handler);
-					setupInteractiveLabel(inp.previousElementSibling, inp);
-				},
+		),
+		annihilationZone: mkZoneCfg('annihilationZonesListContainer', 'annihilationZonesCollapsible', 'annihilationZoneListCount', 'annihilationZones', 'removeAnnihilationZone', '#9b59b6', 'selectedAnnihilationZoneId', 'selectedAnnihilationZoneId',
+			[{ label: 'Pos X', key: 'x' }, { label: 'Pos Y', key: 'y' }, { label: 'W', key: 'width', min: 1 }, { label: 'H', key: 'height', min: 1 }],
+			(z) => `<div class="mini-input-group" style="margin-top:4px; grid-column: span 2;"><label class="toggle-row" style="margin:0; justify-content: flex-start;"><input type="checkbox" class="inp-particle-burst" ${z.particleBurst ? 'checked' : ''}><div class="toggle-switch" style="transform:scale(0.8);"></div><span>Particle Burst</span></label></div>`,
+			(d, z) => d.querySelector('.inp-particle-burst').addEventListener('change', e => z.particleBurst = e.target.checked)
+		),
+		chaosZone: mkZoneCfg('chaosZonesListContainer', 'chaosZonesCollapsible', 'chaosZoneListCount', 'chaosZones', 'removeChaosZone', '#f39c12', 'selectedChaosZoneId', 'selectedChaosZoneId',
+			[{ label: 'Pos X', key: 'x' }, { label: 'Pos Y', key: 'y' }, { label: 'W', key: 'width', min: 1 }, { label: 'H', key: 'height', min: 1 }],
+			(z) => `<div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:4px;"><div class="mini-input-group"><label>Strength</label><input type="number" class="inp-strength" value="${z.strength.toFixed(2)}" step="0.01"></div><div class="mini-input-group"><label>Freq</label><input type="number" class="inp-frequency" value="${z.frequency.toFixed(2)}" step="0.01"></div><div class="mini-input-group"><label>Scale</label><input type="number" class="inp-scale" value="${(z.scale||20).toFixed(1)}" step="1"></div></div>`,
+			(d, z) => {
+				const s=d.querySelector('.inp-strength'), f=d.querySelector('.inp-frequency'), sc=d.querySelector('.inp-scale');
+				const h = () => { z.strength = parseFloat(s.value)||0; z.frequency = parseFloat(f.value)||0; z.scale = parseFloat(sc.value)||20; };
+				[s,f,sc].forEach(e => { e.addEventListener('change', h); e.addEventListener('input', h); setupInteractiveLabel(e.previousElementSibling, e); });
 			}
-		},
-		fieldZone: {
-			listContainer: fieldZonesListContainer,
-			collapsible: document.getElementById('fieldZonesCollapsible'),
-			countSpan: document.getElementById('fieldZoneListCount'),
-			zones: () => Sim.fieldZones,
-			removeFunc: Sim.removeFieldZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#27ae60',
-				activeId: () => Render.selectedFieldZoneId,
-				setActiveId: (id) => { Render.selectedFieldZoneId = id; },
-				fields: [
-					{ label: 'Pos X', key: 'x' }, { label: 'Pos Y', key: 'y' },
-					{ label: 'Width', key: 'width', min: 1, tooltip: `Width of the zone. Set to 'inf' for infinite.` }, 
-					{ label: 'Height', key: 'height', min: 1, tooltip: `Height of the zone. Set to 'inf' for infinite.` },
-					{ label: 'Acc X', key: 'fx', prec: 3, step: 0.01 }, { label: 'Acc Y', key: 'fy', prec: 3, step: 0.01 }
-				]
+		),
+		vortexZone: mkZoneCfg('vortexZonesListContainer', 'vortexZonesCollapsible', 'vortexZoneListCount', 'vortexZones', 'removeVortexZone', '#1abc9c', 'selectedVortexZoneId', 'selectedVortexZoneId',
+			[{ label: 'Center X', key: 'x' }, { label: 'Center Y', key: 'y' }, { label: 'Radius', key: 'radius', min: 1 }],
+			(z) => `<div class="mini-input-group" style="margin-top:4px;"><label>Strength</label><input type="number" class="inp-strength" value="${z.strength.toFixed(2)}" step="0.1"></div>`,
+			(d, z) => { const i = d.querySelector('.inp-strength'); const h = () => z.strength = parseFloat(i.value)||0; i.addEventListener('change', h); i.addEventListener('input', h); setupInteractiveLabel(i.previousElementSibling, i); }
+		),
+		nullZone: mkZoneCfg('nullZonesListContainer', 'nullZonesCollapsible', 'nullZoneListCount', 'nullZones', 'removeNullZone', '#7f8c8d', 'selectedNullZoneId', 'selectedNullZoneId',
+			[{ label: 'Pos X', key: 'x' }, { label: 'Pos Y', key: 'y' }, { label: 'W', key: 'width', min: 1 }, { label: 'H', key: 'height', min: 1 }],
+			(z) => `<div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:4px; font-size: 10px; gap: 4px;">` + 
+				['Gravity', 'Electricity', 'Magnetism'].map(t => `<label class="toggle-row" style="margin:0; justify-content: flex-start;"><input type="checkbox" class="inp-null-${t[0].toLowerCase()}" ${z[`nullify${t}`] ? 'checked' : ''}><div class="toggle-switch" style="transform:scale(0.7);"></div><span>${t.slice(0,4)}</span></label>`).join('') + `</div>`,
+			(d, z) => {
+				d.querySelector('.inp-null-g').addEventListener('change', e => z.nullifyGravity = e.target.checked);
+				d.querySelector('.inp-null-e').addEventListener('change', e => z.nullifyElectricity = e.target.checked);
+				d.querySelector('.inp-null-m').addEventListener('change', e => z.nullifyMagnetism = e.target.checked);
 			}
-		},
-		thermalZone: {
-			listContainer: thermalZonesListContainer,
-			collapsible: document.getElementById('thermalZonesCollapsible'),
-			countSpan: document.getElementById('thermalZoneListCount'),
-			zones: () => Sim.thermalZones,
-			removeFunc: Sim.removeThermalZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#e74c3c',
-				activeId: () => Render.selectedThermalZoneId,
-				setActiveId: (id) => { Render.selectedThermalZoneId = id; },
-				fields: [
-					{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' },
-					{ label: 'Width', key: 'width', min: 1, tooltip: `Width of the zone. Set to 'inf' for infinite.` }, 
-					{ label: 'Height', key: 'height', min: 1, tooltip: `Height of the zone. Set to 'inf' for infinite.` }
-				],
-				extra: (zone) => `
-					<div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:4px;">
-						<div class="mini-input-group">
-							<label>Temperature (K)</label>
-							<input type="number" class="inp-temperature" value="${zone.temperature.toFixed(0)}">
-						</div>
-						<div class="mini-input-group">
-							<label>Heat Transfer</label>
-							<input type="number" class="inp-htc" value="${zone.heatTransferCoefficient.toFixed(2)}" step="0.01">
-						</div>
-					</div>`,
-				setupExtra: (div, zone) => {
-					const tempInp = div.querySelector('.inp-temperature');
-					const htcInp = div.querySelector('.inp-htc');
-					
-					const handler = () => {
-						let tempVal = parseFloat(tempInp.value);
-						if (isNaN(tempVal) || tempVal < 0) {
-							tempVal = 0;
-							tempInp.value = tempVal.toFixed(0);
-						}
-						zone.temperature = tempVal;
-						zone.heatTransferCoefficient = parseFloat(htcInp.value) || 0;
-					};
-					
-					tempInp.addEventListener('change', handler); tempInp.addEventListener('input', handler);
-					htcInp.addEventListener('change', handler); htcInp.addEventListener('input', handler);
-					
-					setupInteractiveLabel(tempInp.previousElementSibling, tempInp);
-					setupInteractiveLabel(htcInp.previousElementSibling, htcInp);
-				},
+		),
+		solidBarrier: mkZoneCfg('barriersListContainer', 'barriersCollapsible', 'barrierListCount', 'solidBarriers', 'removeSolidBarrier', '#8e44ad', 'selectedBarrierId', 'selectedBarrierId',
+			[{ label: 'X1', key: 'x1', prec: 1 }, { label: 'Y1', key: 'y1', prec: 1 }, { label: 'X2', key: 'x2', prec: 1 }, { label: 'Y2', key: 'y2', prec: 1 }, { label: 'Restitution', key: 'restitution', prec: 2, step: 0.05, min: 0, max: 2 }, { label: 'Friction', key: 'friction', prec: 2, step: 0.05, min: 0, max: 2 }]
+		),
+		elasticBond: mkZoneCfg('bondsListContainer', 'bondsCollapsible', 'bondListCount', 'elasticBonds', 'removeElasticBond', '#ffffff', 'selectedBondId', 'selectedBondId',
+			[{ label: 'Stiffness (k)', key: 'stiffness', prec: 2, step: 0.01, constraint: 'non-negative' }, { label: 'Damping', key: 'damping', prec: 2, step: 0.01, constraint: 'non-negative' }, { label: 'Length', key: 'length', prec: 1, step: 1, constraint: 'positive' }, { label: 'Non-Linearity', key: 'nonLinearity', prec: 2, step: 0.1, constraint: 'positive' }, { label: 'Break Tension', key: 'breakTension', prec: 0, step: 1, constraint: 'breakable' }, { label: 'Active Amp', key: 'activeAmp', prec: 2, step: 0.05, constraint: 'non-negative' }, { label: 'Active Freq', key: 'activeFreq', prec: 2, step: 0.1, constraint: 'non-negative' }],
+			(b) => {
+				const b1Name = Sim.bodies[b.body1] ? Sim.bodies[b.body1].name : `#${b.body1}`;
+				const b2Name = Sim.bodies[b.body2] ? Sim.bodies[b.body2].name : `#${b.body2}`;
+				let presetOptions = `<option value="" disabled ${!Object.values(bondPresets).some(p => b.type === p.type && Math.abs(b.stiffness - p.stiffness) < 0.001) ? 'selected' : ''} style="display:none;">Custom</option>`;
+				Object.keys(bondPresets).forEach(key => {
+					const p = bondPresets[key];
+					const isMatch = b.type === p.type && Math.abs(b.stiffness - p.stiffness) < 0.001;
+					presetOptions += `<option value="${key}" ${isMatch ? 'selected' : ''}>${p.name}</option>`;
+				});
+				return `<div style="font-size:9px; color:var(--text-secondary); margin-bottom:4px;">${b1Name} <i class="fa-solid fa-link"></i> ${b2Name}</div><div class="mini-input-group"><label>Preset</label><select class="inp-btype" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid #3a3a3a; color:#e0e0e0; font-size:10px; border-radius:2px;">${presetOptions}</select></div>`;
+			},
+			(d, b, updateInputs) => {
+				d.querySelector('.inp-btype').addEventListener('change', (e) => {
+					const key = e.target.value;
+					if (bondPresets[key]) {
+						const p = bondPresets[key];
+						Object.assign(b, { type: p.type, stiffness: p.stiffness, damping: p.damping, nonLinearity: p.nonLinearity, breakTension: p.breakTension, activeAmp: p.activeAmp, activeFreq: p.activeFreq });
+						updateInputs();
+					}
+				});
 			}
-		},
-		annihilationZone: {
-			listContainer: document.getElementById('annihilationZonesListContainer'),
-			collapsible: document.getElementById('annihilationZonesCollapsible'),
-			countSpan: document.getElementById('annihilationZoneListCount'),
-			zones: () => Sim.annihilationZones,
-			removeFunc: Sim.removeAnnihilationZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#9b59b6',
-				activeId: () => Render.selectedAnnihilationZoneId,
-				setActiveId: (id) => { Render.selectedAnnihilationZoneId = id; },
-				fields: [
-					{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' },
-					{ label: 'Width', key: 'width', min: 1, tooltip: `Width of the zone. Set to 'inf' for infinite.` }, 
-					{ label: 'Height', key: 'height', min: 1, tooltip: `Height of the zone. Set to 'inf' for infinite.` }
-				],
-				extra: (zone) => `
-					<div class="mini-input-group" style="margin-top:4px; grid-column: span 2;">
-						<label class="toggle-row" style="margin:0; justify-content: flex-start;">
-							<input type="checkbox" class="inp-particle-burst" ${zone.particleBurst ? 'checked' : ''}>
-							<div class="toggle-switch" style="transform:scale(0.8);"></div>
-							<span>Particle Burst on Annihilation</span>
-						</label>
-					</div>`,
-				setupExtra: (div, zone) => {
-					const burstCheckbox = div.querySelector('.inp-particle-burst');
-					burstCheckbox.addEventListener('change', (e) => { zone.particleBurst = e.target.checked; });
-				}
-			}
-		},
-		chaosZone: {
-			listContainer: document.getElementById('chaosZonesListContainer'),
-			collapsible: document.getElementById('chaosZonesCollapsible'),
-			countSpan: document.getElementById('chaosZoneListCount'),
-			zones: () => Sim.chaosZones,
-			removeFunc: Sim.removeChaosZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#f39c12',
-				activeId: () => Render.selectedChaosZoneId,
-				setActiveId: (id) => { Render.selectedChaosZoneId = id; },
-				fields: [
-					{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' },
-					{ label: 'Width', key: 'width', min: 1, tooltip: `Width of the zone. Set to 'inf' for infinite.` }, 
-					{ label: 'Height', key: 'height', min: 1, tooltip: `Height of the zone. Set to 'inf' for infinite.` }
-				],
-				extra: (zone) => `
-					<div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:4px;">
-						<div class="mini-input-group">
-							<label>Strength</label>
-							<input type="number" class="inp-strength" value="${zone.strength.toFixed(2)}" step="0.01">
-						</div>
-						<div class="mini-input-group">
-							<label>Frequency</label>
-							<input type="number" class="inp-frequency" value="${zone.frequency.toFixed(2)}" step="0.01">
-						</div>
-						<div class="mini-input-group">
-							<label>Scale</label>
-							<input type="number" class="inp-scale" value="${(zone.scale || 20.0).toFixed(1)}" step="1">
-						</div>
-					</div>`,
-				setupExtra: (div, zone) => {
-					const strengthInp = div.querySelector('.inp-strength'); const freqInp = div.querySelector('.inp-frequency'); const scaleInp = div.querySelector('.inp-scale');
-					const handler = () => {
-						zone.strength = parseFloat(strengthInp.value) || 0;
-						zone.frequency = parseFloat(freqInp.value) || 0;
-						zone.scale = parseFloat(scaleInp.value) || 20.0;
-					};
-					strengthInp.addEventListener('change', handler); strengthInp.addEventListener('input', handler);
-					freqInp.addEventListener('change', handler); freqInp.addEventListener('input', handler);
-					scaleInp.addEventListener('change', handler); scaleInp.addEventListener('input', handler);
-					setupInteractiveLabel(strengthInp.previousElementSibling, strengthInp);
-					setupInteractiveLabel(freqInp.previousElementSibling, freqInp);
-					setupInteractiveLabel(scaleInp.previousElementSibling, scaleInp);
-				},
-			}
-		},
-		vortexZone: {
-			listContainer: document.getElementById('vortexZonesListContainer'),
-			collapsible: document.getElementById('vortexZonesCollapsible'),
-			countSpan: document.getElementById('vortexZoneListCount'),
-			zones: () => Sim.vortexZones,
-			removeFunc: Sim.removeVortexZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#1abc9c',
-				activeId: () => Render.selectedVortexZoneId,
-				setActiveId: (id) => { Render.selectedVortexZoneId = id; },
-				fields: [
-					{ label: 'Center X', key: 'x' }, { label: 'Center Y', key: 'y' },
-					{ label: 'Radius', key: 'radius', min: 1 }
-				],
-				extra: (zone) => `
-					<div class="mini-input-group" style="margin-top:4px;">
-						<label>Strength</label>
-						<input type="number" class="inp-strength" value="${zone.strength.toFixed(2)}" step="0.1">
-					</div>`,
-				setupExtra: (div, zone) => {
-					const strengthInp = div.querySelector('.inp-strength');
-					const handler = () => { zone.strength = parseFloat(strengthInp.value) || 0; };
-					strengthInp.addEventListener('change', handler);
-					strengthInp.addEventListener('input', handler);
-					setupInteractiveLabel(strengthInp.previousElementSibling, strengthInp);
-				},
-			}
-		},
-		nullZone: {
-			listContainer: document.getElementById('nullZonesListContainer'),
-			collapsible: document.getElementById('nullZonesCollapsible'),
-			countSpan: document.getElementById('nullZoneListCount'),
-			zones: () => Sim.nullZones,
-			removeFunc: Sim.removeNullZone.bind(Sim),
-			cardConfig: {
-				defaultColor: '#7f8c8d',
-				activeId: () => Render.selectedNullZoneId,
-				setActiveId: (id) => { Render.selectedNullZoneId = id; },
-				fields: [
-					{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' },
-					{ label: 'Width', key: 'width', min: 1, tooltip: `Width of the zone. Set to 'inf' for infinite.` }, 
-					{ label: 'Height', key: 'height', min: 1, tooltip: `Height of the zone. Set to 'inf' for infinite.` }
-				],
-				extra: (zone) => `
-					<div class="card-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:4px; font-size: 10px; gap: 4px;">
-						<label class="toggle-row" style="margin:0; justify-content: flex-start;">
-							<input type="checkbox" class="inp-null-g" ${zone.nullifyGravity ? 'checked' : ''}>
-							<div class="toggle-switch" style="transform:scale(0.7);"></div><span>Gravity</span>
-						</label>
-						<label class="toggle-row" style="margin:0; justify-content: flex-start;">
-							<input type="checkbox" class="inp-null-e" ${zone.nullifyElectricity ? 'checked' : ''}>
-							<div class="toggle-switch" style="transform:scale(0.7);"></div><span>Electric</span>
-						</label>
-						<label class="toggle-row" style="margin:0; justify-content: flex-start;">
-							<input type="checkbox" class="inp-null-m" ${zone.nullifyMagnetism ? 'checked' : ''}>
-							<div class="toggle-switch" style="transform:scale(0.7);"></div><span>Magnetic</span>
-						</label>
-					</div>`,
-				setupExtra: (div, zone) => {
-					div.querySelector('.inp-null-g').addEventListener('change', (e) => { zone.nullifyGravity = e.target.checked; });
-					div.querySelector('.inp-null-e').addEventListener('change', (e) => { zone.nullifyElectricity = e.target.checked; });
-					div.querySelector('.inp-null-m').addEventListener('change', (e) => { zone.nullifyMagnetism = e.target.checked; });
-				}
-			}
-		}
+		)
 	};
 	
 	const toolButtons = [
@@ -1201,8 +1025,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		const refreshAllLists = () => {
 			refreshBodyList();
 			Object.keys(zoneConfigs).forEach(refreshZoneList);
-			refreshElasticBondList();
-			refreshSolidBarrierList();
 			refreshFieldList();
 		};
 
@@ -2221,12 +2043,14 @@ document.addEventListener('DOMContentLoaded', () => {
 			extraHtml = config.extra(zone);
 		}
 
-		const shapeIcon = zone.shape === 'circle' ? 'fa-circle' : 'fa-square';
+		const shapeIcon = zone.shape ? (zone.shape === 'circle' ? 'fa-circle' : 'fa-square') : 'fa-vector-square';
+		const shapeTitle = zone.shape ? `Shape: ${zone.shape}` : 'Object';
+		
 		div.innerHTML = `
 			<div class="zone-header">
 				<div style="display: flex; align-items: center; gap: 5px;">
 					<input type="color" class="zone-color" value="${zone.color || config.defaultColor}" style="width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;">
-					<i class="fa-solid ${shapeIcon}" style="color: var(--text-secondary); font-size: 10px;" title="Shape: ${zone.shape}"></i>
+					<i class="fa-solid ${shapeIcon}" style="color: var(--text-secondary); font-size: 10px;" title="${shapeTitle}"></i>
 					<input type="text" class="zone-name" value="${zone.name}">
 				</div>
 				<div style="display:flex; align-items:center; gap:8px;">
@@ -2237,6 +2061,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					<button class="btn-delete" title="Remove"><i class="fa-solid fa-trash"></i></button>
 				</div>
 			</div>
+			${config.subtitle ? config.subtitle(zone) : ''}
 			<div class="card-grid" style="grid-template-columns: 1fr 1fr;">${gridHtml}</div>
 			${extraHtml}
 		`;
@@ -2277,7 +2102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 
 		if (config.setupExtra) {
-			config.setupExtra(div, zone);
+			config.setupExtra(div, zone, updateZone);
 		}
 
 		div.querySelector('.btn-delete').addEventListener('click', (e) => {
@@ -2287,10 +2112,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			refreshFunc();
 		});
 		
-		div.querySelectorAll('.mini-input-group').forEach(group => {
+		div.querySelectorAll('.mini-input-group').forEach((group, idx) => {
 			const label = group.querySelector('label');
 			const input = group.querySelector('input');
-			if (input && input.type === 'number') setupInteractiveLabel(label, input);
+			if (input && input.type === 'number') {
+				const fieldConfig = fieldsToShow[idx]; 
+				// Find matching field config by class if index method is unreliable due to extra html
+				const key = input.className.replace('inp-', '');
+				const fc = fieldsToShow.find(f => f.key === key);
+				setupInteractiveLabel(label, input, fc ? fc.constraint : 'default');
+			}
 		});
 
 		return div;
@@ -2442,279 +2273,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 	
-	function refreshSolidBarrierList() {
-		const collapsible = document.getElementById('barriersCollapsible');
-		const countSpan = document.getElementById('barrierListCount');
-
-		if (!barriersListContainer) return;
-		barriersListContainer.innerHTML = '';
-
-		const barrierCount = Sim.solidBarriers.length;
-		if (countSpan) countSpan.textContent = barrierCount;
-
-		if (barrierCount > 0) {
-			if (collapsible) collapsible.style.display = 'block';
-		} else {
-			if (collapsible) collapsible.style.display = 'none';
-			return;
-		}
-
-		Sim.solidBarriers.forEach((barrier) => {
-			const div = document.createElement('div');
-			div.className = 'zone-card';
-			if (Render.selectedBarrierId === barrier.id) {
-				div.classList.add('active');
-			}
-			
-			div.addEventListener('click', (e) => {
-				if (e.target.tagName !== 'INPUT' && !e.target.closest('button') && !e.target.classList.contains('toggle-switch')) {
-					Render.selectedBarrierId = barrier.id;
-					refreshSolidBarrierList();
-				}
-			});
-
-			div.innerHTML = `
-				<div class="zone-header">
-					<div style="display: flex; align-items: center; gap: 5px;">
-						<input type="color" class="barrier-color" value="${barrier.color || '#8e44ad'}" style="width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;">
-						<input type="text" class="barrier-name" value="${barrier.name}" style="width: 80px;">
-					</div>
-					<div style="display:flex; align-items:center; gap:8px;">
-						<label class="toggle-row" style="margin:0;">
-							<input type="checkbox" class="inp-barrier-enabled" ${barrier.enabled ? 'checked' : ''}>
-							<div class="toggle-switch" style="transform:scale(0.8);"></div>
-						</label>
-						<button class="btn-delete" title="Remove Barrier"><i class="fa-solid fa-trash"></i></button>
-					</div>
-				</div>
-				<div class="card-grid" style="grid-template-columns: 1fr 1fr;">
-					<div class="mini-input-group"><label>X1</label><input type="number" class="inp-bx1" value="${barrier.x1.toFixed(1)}"></div>
-					<div class="mini-input-group"><label>Y1</label><input type="number" class="inp-by1" value="${barrier.y1.toFixed(1)}"></div>
-					<div class="mini-input-group"><label>X2</label><input type="number" class="inp-bx2" value="${barrier.x2.toFixed(1)}"></div>
-					<div class="mini-input-group"><label>Y2</label><input type="number" class="inp-by2" value="${barrier.y2.toFixed(1)}"></div>
-				</div>
-				<div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:4px;">
-					<div class="mini-input-group"><label>Restitution</label><input type="number" class="inp-brest" value="${barrier.restitution.toFixed(2)}" step="0.05" min="0" max="2"></div>
-					<div class="mini-input-group"><label>Friction</label><input type="number" class="inp-bfric" value="${(barrier.friction !== undefined ? barrier.friction : 0.5).toFixed(2)}" step="0.05" min="0" max="2"></div>
-				</div>
-			`;
-			
-			div.querySelector('.inp-barrier-enabled').addEventListener('change', (e) => { barrier.enabled = e.target.checked; });
-			div.querySelector('.barrier-color').addEventListener('input', (e) => { barrier.color = e.target.value; });
-			div.querySelector('.barrier-name').addEventListener('change', (e) => { barrier.name = e.target.value; });
-			
-			const inpX1 = div.querySelector('.inp-bx1');
-			const inpY1 = div.querySelector('.inp-by1');
-			const inpX2 = div.querySelector('.inp-bx2');
-			const inpY2 = div.querySelector('.inp-by2');
-			const inpRest = div.querySelector('.inp-brest');
-			const inpFric = div.querySelector('.inp-bfric');
-			
-			const updateBarrier = () => {
-				barrier.x1 = parseFloat(inpX1.value) || 0;
-				barrier.y1 = parseFloat(inpY1.value) || 0;
-				barrier.x2 = parseFloat(inpX2.value) || 0;
-				barrier.y2 = parseFloat(inpY2.value) || 0;
-				
-				const rawRest = parseFloat(inpRest.value);
-				barrier.restitution = rawRest >= 0 ? rawRest : 0.8;
-				if (barrier.restitution !== rawRest) inpRest.value = barrier.restitution;
-
-				const rawFric = parseFloat(inpFric.value);
-				barrier.friction = rawFric >= 0 ? rawFric : 0.5;
-				if (barrier.friction !== rawFric) inpFric.value = barrier.friction;
-			};
-			
-			[inpX1, inpY1, inpX2, inpY2, inpRest, inpFric].forEach(inp => {
-				addMathParsing(inp);
-				inp.addEventListener('change', updateBarrier);
-				inp.addEventListener('input', updateBarrier);
-			});
-			
-			div.querySelector('.btn-delete').addEventListener('click', (e) => {
-				e.stopPropagation();
-				Sim.removeSolidBarrier(barrier.id);
-				if (Render.selectedBarrierId === barrier.id) Render.selectedBarrierId = null;
-				refreshSolidBarrierList();
-			});
-
-			barriersListContainer.appendChild(div);
-			
-			div.querySelectorAll('.mini-input-group').forEach(group => {
-				const label = group.querySelector('label');
-				const input = group.querySelector('input');
-				if (input) {
-					setupInteractiveLabel(label, input);
-				}
-			});
-		});
-	}
-	
-	function refreshElasticBondList() {
-		const collapsible = document.getElementById('bondsCollapsible');
-		const countSpan = document.getElementById('bondListCount');
-
-		if (!bondsListContainer) return;
-		bondsListContainer.innerHTML = '';
-
-		const bondCount = Sim.elasticBonds.length;
-		if (countSpan) countSpan.textContent = bondCount;
-		
-		if (bondCount > 0) {
-			if (collapsible) collapsible.style.display = 'block';
-		} else {
-			if (collapsible) collapsible.style.display = 'none';
-			return;
-		}
-		
-		Sim.elasticBonds.forEach((bond) => {
-			const div = document.createElement('div');
-			div.className = 'zone-card';
-			if (Render.selectedBondId === bond.id) {
-				div.classList.add('active');
-			}
-			
-			const b1Name = Sim.bodies[bond.body1] ? Sim.bodies[bond.body1].name : `#${bond.body1}`;
-			const b2Name = Sim.bodies[bond.body2] ? Sim.bodies[bond.body2].name : `#${bond.body2}`;
-			
-			div.addEventListener('click', (e) => {
-				if (e.target.tagName !== 'INPUT' && !e.target.closest('button') && !e.target.classList.contains('toggle-switch') && e.target.tagName !== 'SELECT') {
-					Render.selectedBondId = bond.id;
-					refreshElasticBondList();
-				}
-			});
-
-			let presetOptions = `<option value="" disabled ${!Object.values(bondPresets).some(p => bond.type === p.type && Math.abs(bond.stiffness - p.stiffness) < 0.001) ? 'selected' : ''} style="display:none;">Custom</option>`;
-			
-			Object.keys(bondPresets).forEach(key => {
-				const p = bondPresets[key];
-				const isMatch = bond.type === p.type && 
-								Math.abs(bond.stiffness - p.stiffness) < 0.001 &&
-								Math.abs(bond.damping - p.damping) < 0.001;
-				
-				presetOptions += `<option value="${key}" ${isMatch ? 'selected' : ''}>${p.name}</option>`;
-			});
-
-			div.innerHTML = `
-				<div class="zone-header">
-					<div style="display: flex; align-items: center; gap: 5px;">
-						<input type="color" class="bond-color" value="${bond.color || '#ffffff'}" style="width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;">
-						<input type="text" class="bond-name" value="${bond.name}" style="width: 80px;">
-					</div>
-					<div style="display:flex; align-items:center; gap:8px;">
-						<label class="toggle-row" style="margin:0;">
-							<input type="checkbox" class="inp-bond-enabled" ${bond.enabled ? 'checked' : ''}>
-							<div class="toggle-switch" style="transform:scale(0.8);"></div>
-						</label>
-						<button class="btn-delete" title="Remove Bond"><i class="fa-solid fa-trash"></i></button>
-					</div>
-				</div>
-				<div style="font-size:9px; color:var(--text-secondary); margin-bottom:4px;">
-					${b1Name} <i class="fa-solid fa-link"></i> ${b2Name}
-				</div>
-				<div class="card-grid" style="grid-template-columns: 1fr 1fr;">
-					<div class="mini-input-group"><label>Stiffness (k)</label><input type="number" class="inp-bstiff" value="${bond.stiffness.toFixed(2)}" step="0.01"></div>
-					<div class="mini-input-group"><label>Damping</label><input type="number" class="inp-bdamp" value="${bond.damping.toFixed(2)}" step="0.01"></div>
-					<div class="mini-input-group"><label>Length</label><input type="number" class="inp-blen" value="${bond.length.toFixed(1)}" step="1"></div>
-					<div class="mini-input-group"><label>Preset</label>
-						<select class="inp-btype" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid #3a3a3a; color:#e0e0e0; font-size:10px; border-radius:2px;">
-							${presetOptions}
-						</select>
-					</div>
-				</div>
-				<div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:4px;">
-					<div class="mini-input-group"><label>Non-Linearity</label><input type="number" class="inp-bnonlin" value="${(bond.nonLinearity || 1).toFixed(2)}" step="0.1"></div>
-					<div class="mini-input-group"><label>Break Tension</label><input type="number" class="inp-bbreak" value="${(bond.breakTension || -1)}" step="1"></div>
-				</div>
-				<div class="card-grid" style="grid-template-columns: 1fr 1fr; margin-top:4px;">
-					<div class="mini-input-group"><label>Active Amp</label><input type="number" class="inp-bactivea" value="${(bond.activeAmp || 0).toFixed(2)}" step="0.05"></div>
-					<div class="mini-input-group"><label>Active Freq</label><input type="number" class="inp-bactivef" value="${(bond.activeFreq || 0).toFixed(2)}" step="0.1"></div>
-				</div>
-			`;
-			
-			div.querySelector('.inp-bond-enabled').addEventListener('change', (e) => { bond.enabled = e.target.checked; });
-			div.querySelector('.bond-color').addEventListener('input', (e) => { bond.color = e.target.value; });
-			div.querySelector('.bond-name').addEventListener('change', (e) => { bond.name = e.target.value; });
-			
-			const inpType = div.querySelector('.inp-btype');
-			const inpStiff = div.querySelector('.inp-bstiff');
-			const inpDamp = div.querySelector('.inp-bdamp');
-			const inpLen = div.querySelector('.inp-blen');
-			const inpNonLin = div.querySelector('.inp-bnonlin');
-			const inpBreak = div.querySelector('.inp-bbreak');
-			const inpAmp = div.querySelector('.inp-bactivea');
-			const inpFreq = div.querySelector('.inp-bactivef');
-			
-			inpType.addEventListener('change', (e) => { 
-				const key = e.target.value;
-				if (bondPresets[key]) {
-					const p = bondPresets[key];
-					bond.type = p.type;
-					bond.stiffness = p.stiffness;
-					bond.damping = p.damping;
-					bond.nonLinearity = p.nonLinearity;
-					bond.breakTension = p.breakTension;
-					bond.activeAmp = p.activeAmp;
-					bond.activeFreq = p.activeFreq;
-					
-					inpStiff.value = bond.stiffness.toFixed(2);
-					inpDamp.value = bond.damping.toFixed(2);
-					inpNonLin.value = bond.nonLinearity.toFixed(2);
-					inpBreak.value = bond.breakTension;
-					inpAmp.value = bond.activeAmp.toFixed(2);
-					inpFreq.value = bond.activeFreq.toFixed(2);
-				}
-			});
-
-			const updateBond = () => {
-				bond.stiffness = Math.max(0, parseFloat(inpStiff.value) || 0);
-				bond.damping = Math.max(0, parseFloat(inpDamp.value) || 0);
-				bond.length = Math.max(1e-6, parseFloat(inpLen.value) || 0);
-				bond.nonLinearity = Math.max(1e-6, parseFloat(inpNonLin.value) || 1);
-				bond.breakTension = parseFloat(inpBreak.value) || -1;
-				bond.activeAmp = Math.max(0, parseFloat(inpAmp.value) || 0);
-				bond.activeFreq = Math.max(0, parseFloat(inpFreq.value) || 0);
-				inpType.value = "";
-			};
-			
-			[inpStiff, inpDamp, inpLen, inpNonLin, inpBreak, inpAmp, inpFreq].forEach(inp => {
-				addMathParsing(inp);
-				inp.addEventListener('change', updateBond);
-				inp.addEventListener('input', updateBond);
-			});
-			
-			div.querySelector('.btn-delete').addEventListener('click', (e) => {
-				e.stopPropagation();
-				Sim.removeElasticBond(bond.id);
-				if (Render.selectedBondId === bond.id) Render.selectedBondId = null;
-				refreshElasticBondList();
-			});
-
-			bondsListContainer.appendChild(div);
-			
-			const bondConstraintMap = {
-				'.inp-bstiff': 'non-negative', '.inp-bdamp': 'non-negative', '.inp-blen': 'positive',
-				'.inp-bnonlin': 'positive', '.inp-bbreak': 'breakable', '.inp-bactivea': 'non-negative',
-				'.inp-bactivef': 'non-negative'
-			};
-
-			div.querySelectorAll('.mini-input-group').forEach(group => {
-				const label = group.querySelector('label');
-				const input = group.querySelector('input, select');
-				if (input.tagName === 'INPUT') {
-					let constraint = 'default';
-					for (const selector in bondConstraintMap) {
-						if (input.matches(selector)) {
-							constraint = bondConstraintMap[selector];
-							break;
-						}
-					}
-					setupInteractiveLabel(label, input, constraint);
-				}
-			});
-		});
-	}
-	
 	Sim.addBody = function(...args) {
 		originalAddBody(...args);
 		if (!isBatchLoading) {
@@ -2725,7 +2283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	Sim.removeBody = function(index) {
 		originalRemoveBody(index);
 		refreshBodyList();
-		refreshElasticBondList();
+		refreshZoneList('elasticBond');
 	};
 
 	Sim.reset = function() {
@@ -2733,8 +2291,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (!isBatchLoading) {
 			refreshBodyList();
 			Object.keys(zoneConfigs).forEach(refreshZoneList);
-			refreshElasticBondList();
-			refreshSolidBarrierList();
 			refreshFieldList();
 		}
 	};
@@ -2807,53 +2363,37 @@ document.addEventListener('DOMContentLoaded', () => {
 	window.App.ui.refreshChaosZones = () => refreshZoneList('chaosZone');
 	window.App.ui.refreshVortexZones = () => refreshZoneList('vortexZone');
 	window.App.ui.refreshNullZones = () => refreshZoneList('nullZone');
-	window.App.ui.refreshSolidBarrierList = refreshSolidBarrierList;
-	window.App.ui.refreshElasticBondList = refreshElasticBondList;
-	
-	window.App.ui.getBondConfig = function() {
-		const select = document.getElementById('bondPresetSelect');
-		if (select && bondPresets[select.value]) {
-			return bondPresets[select.value];
-		}
-		return {};
-	};
-	
-	setupCollapsibleList('periodicZonesListHeader', 'zonesListContainer', 'togglePeriodicZonesListBtn');
-	setupCollapsibleList('viscosityZonesListHeader', 'viscosityZonesListContainer', 'toggleViscosityZonesListBtn');
-	setupCollapsibleList('bondsListHeader', 'bondsListContainer', 'toggleBondsListBtn');
-	setupCollapsibleList('barriersListHeader', 'barriersListContainer', 'toggleBarriersListBtn');
-	setupCollapsibleList('fieldDefHeader', 'fieldDefContent', 'toggleFieldDefBtn');
-	setupCollapsibleList('fieldDefListHeader', 'fieldsListContainer', 'toggleFieldDefListBtn');
-	setupCollapsibleList('thermalZonesListHeader', 'thermalZonesListContainer', 'toggleThermalZonesListBtn');
-	setupCollapsibleList('annihilationZonesListHeader', 'annihilationZonesListContainer', 'toggleAnnihilationZonesListBtn');
-	setupCollapsibleList('chaosZonesListHeader', 'chaosZonesListContainer', 'toggleChaosZonesListBtn');
-	setupCollapsibleList('vortexZonesListHeader', 'vortexZonesListContainer', 'toggleVortexZonesListBtn');
-	setupCollapsibleList('nullZonesListHeader', 'nullZonesListContainer', 'toggleNullZonesListBtn');
-	
-	bindRange('trailLenSlider', 'trailLenVal', Sim, 'trailLength');
-	bindRange('trailPrecSlider', 'trailPrecVal', Sim, 'trailStep');
-	bindRange('gridPrecSlider', 'gridPrecVal', Render, 'gridDetail');
-	bindRange('gridDistSlider', 'gridDistVal', Render, 'gridDistortion', true, 2);
-	bindRange('gridMinDistSlider', 'gridMinDistVal', Render, 'gridMinDist');
-	bindRange('fieldPrecSlider', 'fieldPrecVal', Render, 'fieldPrecision');
-	bindRange('fieldScaleSlider', 'fieldScaleVal', Render, 'fieldScale');
-	bindRange('trailPrecSlider', 'trailPrecVal', Sim, 'trailStep');
-	bindRange('predictionLenSlider', 'predictionLenVal', Render, 'predictionLength', false, 0);
-	bindToggle('showTrailsBox', Sim, 'showTrails');
-	bindToggle('camTrackingBox', Render, 'enableTracking', (checked) => {if (checked) {Render.trackedBodyIdx = -1;refreshBodyList();}});
-	bindToggle('camAutoZoomBox', Render, 'enableAutoZoom', (checked) => {if (checked) Render.userZoomFactor = 1.0;});
-	bindToggle('gravBox', Sim, 'enableGravity');
-	bindToggle('elecBox', Sim, 'enableElectricity');
-	bindToggle('magBox', Sim, 'enableMagnetism');
-	bindToggle('colBox', Sim, 'enableCollision');
-	bindToggle('thermoBox', Sim, 'enableThermodynamics', (checked) => {if (thermoParams) thermoParams.classList.toggle('hidden-content', !checked);});
-	bindToggle('fragBox', Sim, 'enableFragmentation', (checked) => {if (fragParams) fragParams.classList.toggle('hidden-content', !checked);});
-	bindToggle('showGravFieldBox', Render, 'showGravField');
-	bindToggle('showElecFieldBox', Render, 'showElecField');
-	bindToggle('showMagFieldBox', Render, 'showMagField');
-	bindToggle('showFormulaFieldBox', Render, 'showFormulaField');
-	bindToggle('physicalColorBox', Sim, 'enablePhysicalColors');
-	bindToggle('fragBox', Sim, 'enableFragmentation');
+	window.App.ui.refreshSolidBarrierList = () => refreshZoneList('solidBarrier');
+	window.App.ui.refreshElasticBondList = () => refreshZoneList('elasticBond');
+	window.App.ui.getBondConfig = function() { const s = document.getElementById('bondPresetSelect'); return (s && bondPresets[s.value]) ? bondPresets[s.value] : {}; };
+
+	[
+		['periodicZonesListHeader', 'zonesListContainer', 'togglePeriodicZonesListBtn'], ['viscosityZonesListHeader', 'viscosityZonesListContainer', 'toggleViscosityZonesListBtn'],
+		['bondsListHeader', 'bondsListContainer', 'toggleBondsListBtn'], ['barriersListHeader', 'barriersListContainer', 'toggleBarriersListBtn'],
+		['fieldDefHeader', 'fieldDefContent', 'toggleFieldDefBtn'], ['fieldDefListHeader', 'fieldsListContainer', 'toggleFieldDefListBtn'],
+		['thermalZonesListHeader', 'thermalZonesListContainer', 'toggleThermalZonesListBtn'], ['annihilationZonesListHeader', 'annihilationZonesListContainer', 'toggleAnnihilationZonesListBtn'],
+		['chaosZonesListHeader', 'chaosZonesListContainer', 'toggleChaosZonesListBtn'], ['vortexZonesListHeader', 'vortexZonesListContainer', 'toggleVortexZonesListBtn'],
+		['nullZonesListHeader', 'nullZonesListContainer', 'toggleNullZonesListBtn']
+	].forEach(args => setupCollapsibleList(...args));
+
+	const bindCfgs = [
+		['trailLenSlider', 'trailLenVal', Sim, 'trailLength'], ['trailPrecSlider', 'trailPrecVal', Sim, 'trailStep'],
+		['gridPrecSlider', 'gridPrecVal', Render, 'gridDetail'], ['gridDistSlider', 'gridDistVal', Render, 'gridDistortion', true, 2],
+		['gridMinDistSlider', 'gridMinDistVal', Render, 'gridMinDist'], ['fieldPrecSlider', 'fieldPrecVal', Render, 'fieldPrecision'],
+		['fieldScaleSlider', 'fieldScaleVal', Render, 'fieldScale'], ['predictionLenSlider', 'predictionLenVal', Render, 'predictionLength', false, 0]
+	];
+	bindCfgs.forEach(args => bindRange(...args));
+
+	const toggleCfgs = [
+		['showTrailsBox', Sim, 'showTrails'], ['showGravFieldBox', Render, 'showGravField'], ['showElecFieldBox', Render, 'showElecField'],
+		['showMagFieldBox', Render, 'showMagField'], ['showFormulaFieldBox', Render, 'showFormulaField'], ['physicalColorBox', Sim, 'enablePhysicalColors'],
+		['gravBox', Sim, 'enableGravity'], ['elecBox', Sim, 'enableElectricity'], ['magBox', Sim, 'enableMagnetism'], ['colBox', Sim, 'enableCollision'],
+		['camTrackingBox', Render, 'enableTracking', (c) => { if (c) { Render.trackedBodyIdx = -1; refreshBodyList(); } }],
+		['camAutoZoomBox', Render, 'enableAutoZoom', (c) => { if (c) Render.userZoomFactor = 1.0; }],
+		['thermoBox', Sim, 'enableThermodynamics', (c) => { if (thermoParams) thermoParams.classList.toggle('hidden-content', !c); }],
+		['fragBox', Sim, 'enableFragmentation', (c) => { if (fragParams) fragParams.classList.toggle('hidden-content', !c); }]
+	];
+	toggleCfgs.forEach(args => bindToggle(...args));
 	
 	initTooltips();
 	initBodySorting();

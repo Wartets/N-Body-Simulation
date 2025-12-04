@@ -786,6 +786,48 @@ const Rendering = {
 		return b.color;
 	},
 	
+	applyDistortion: function(x, y) {
+		if (!window.App.sim.enableGravity || this.gridDistortion <= 0) {
+			this.distortionResult.x = x;
+			this.distortionResult.y = y;
+			return this.distortionResult;
+		}
+
+		let totalDx = 0;
+		let totalDy = 0;
+		
+		const bodies = this.distortingBodies;
+		const count = bodies.length;
+		const limit = 0.85;
+		const minDistSq = this.gridMinDist * this.gridMinDist;
+		const distortionCoeff = this.gridDistortion / Math.max(1, this.zoom);
+
+		for (let i = 0; i < count; i++) {
+			const b = bodies[i];
+			const bx = b.x;
+			const by = b.y;
+			const bmass = b.mass;
+			
+			if (bmass < 1) continue;
+
+			const dx = bx - x;
+			const dy = by - y;
+			const distSq = dx*dx + dy*dy;
+			
+			const effectiveDistSq = distSq + minDistSq;
+			const strength = (bmass * distortionCoeff) / effectiveDistSq;
+			const factor = strength / (1 + strength);
+			const pull = factor * limit;
+
+			totalDx += dx * pull;
+			totalDy += dy * pull;
+		}
+
+		this.distortionResult.x = x + totalDx;
+		this.distortionResult.y = y + totalDy;
+		return this.distortionResult;
+	},
+	
 	drawElasticBonds: function(bonds) {
 		const bodies = window.App.sim.bodies;
 		this.ctx.lineCap = 'round';
@@ -1420,6 +1462,7 @@ const Rendering = {
 		const screenToWorldY = (screenY) => (screenY - this.height / 2 - this.camY) / this.zoom;
 
 		const getNiceStep = (rawStep) => {
+			if (rawStep === 0 || !Number.isFinite(rawStep)) return 1;
 			const exponent = Math.floor(Math.log10(rawStep));
 			const magnitude = Math.pow(10, exponent);
 			const residual = rawStep / magnitude;
@@ -1429,50 +1472,68 @@ const Rendering = {
 			return magnitude;
 		};
 
+		const formatLabel = (val) => {
+			if (val === 0) return "0";
+			const absVal = Math.abs(val);
+			if (absVal >= 10000 || absVal < 0.001) {
+				return val.toExponential(1);
+			}
+			return parseFloat(val.toPrecision(6)).toString();
+		};
+
 		const targetPixelStep = 80;
-		const majorWorldStep = getNiceStep(targetPixelStep / this.zoom);
+		const rawStep = targetPixelStep / this.zoom;
+		const majorWorldStep = getNiceStep(rawStep);
 		const minorWorldStep = majorWorldStep / 5;
 
 		ctx.beginPath();
 		
 		const worldLeft = screenToWorldX(0);
 		const worldRight = screenToWorldX(this.width);
-		let currentWorldX = Math.floor(worldLeft / minorWorldStep) * minorWorldStep;
+		
+		const startX = Math.floor(worldLeft / minorWorldStep);
+		const endX = Math.ceil(worldRight / minorWorldStep);
 
-		while (currentWorldX < worldRight) {
+		for (let i = startX; i <= endX; i++) {
+			const currentWorldX = i * minorWorldStep;
 			const screenX = worldToScreenX(currentWorldX);
-			if (screenX >= margin) {
-				const isMajor = Math.abs(currentWorldX % majorWorldStep) < 1e-9 || Math.abs(currentWorldX % majorWorldStep - majorWorldStep) < 1e-9;
+			
+			if (screenX >= -10 && screenX <= this.width + 10) {
+				const isMajor = (i % 5 === 0);
 				const tickSize = isMajor ? majorTickSize : minorTickSize;
+				
 				ctx.moveTo(screenX, margin);
 				ctx.lineTo(screenX, margin + tickSize);
 
 				if (isMajor) {
 					ctx.textAlign = 'center';
-					ctx.fillText(currentWorldX.toFixed(currentWorldX < 1 ? 2 : 0), screenX, margin + tickSize + 8);
+					ctx.fillText(formatLabel(currentWorldX), screenX, margin + tickSize + 8);
 				}
 			}
-			currentWorldX += minorWorldStep;
 		}
 
 		const worldTop = screenToWorldY(0);
 		const worldBottom = screenToWorldY(this.height);
-		let currentWorldY = Math.floor(worldTop / minorWorldStep) * minorWorldStep;
+		
+		const startY = Math.floor(worldTop / minorWorldStep);
+		const endY = Math.ceil(worldBottom / minorWorldStep);
 
-		while (currentWorldY < worldBottom) {
+		for (let i = startY; i <= endY; i++) {
+			const currentWorldY = i * minorWorldStep;
 			const screenY = worldToScreenY(currentWorldY);
-			if (screenY >= margin) {
-				const isMajor = Math.abs(currentWorldY % majorWorldStep) < 1e-9 || Math.abs(currentWorldY % majorWorldStep - majorWorldStep) < 1e-9;
+			
+			if (screenY >= -10 && screenY <= this.height + 10) {
+				const isMajor = (i % 5 === 0);
 				const tickSize = isMajor ? majorTickSize : minorTickSize;
+				
 				ctx.moveTo(margin, screenY);
 				ctx.lineTo(margin + tickSize, screenY);
 				
 				if (isMajor) {
 					ctx.textAlign = 'left';
-					ctx.fillText(currentWorldY.toFixed(currentWorldY < 1 ? 2 : 0), margin + tickSize + 4, screenY);
+					ctx.fillText(formatLabel(currentWorldY), margin + tickSize + 4, screenY);
 				}
 			}
-			currentWorldY += minorWorldStep;
 		}
 		
 		ctx.stroke();
@@ -1480,19 +1541,30 @@ const Rendering = {
 	},
 	
 	drawGrid: function() {
-		const vpW = this.width / this.zoom;
-		const vpH = this.height / this.zoom;
+		const zoom = this.zoom;
+		const width = this.width;
+		const height = this.height;
+		const camX = this.camX;
+		const camY = this.camY;
+		
+		const worldLeft = (-width / 2 - camX) / zoom;
+		const worldRight = (width / 2 - camX) / zoom;
+		const worldTop = (-height / 2 - camY) / zoom;
+		const worldBottom = (height / 2 - camY) / zoom;
+		
+		const vpW = worldRight - worldLeft;
+		const vpH = worldBottom - worldTop;
 		
 		const viewSize = Math.max(vpW, vpH);
 		const margin = viewSize * 2.5;
 
-		const left = -this.camX - vpW / 2 - margin;
-		const right = -this.camX + vpW / 2 + margin;
-		const top = -this.camY - vpH / 2 - margin;
-		const bottom = -this.camY + vpH / 2 + margin;
+		const left = worldLeft - margin;
+		const right = worldRight + margin;
+		const top = worldTop - margin;
+		const bottom = worldBottom + margin;
 
 		const targetPx = 310;
-		const rawStep = targetPx / this.zoom;
+		const rawStep = targetPx / zoom;
 		const exponent = Math.floor(Math.log10(rawStep));
 		let step = Math.pow(10, exponent);
 		
@@ -1520,34 +1592,50 @@ const Rendering = {
 			this.distortingBodies = [];
 		}
 
-		this.ctx.lineWidth = 0.8 / this.zoom; 
+		this.ctx.save();
+		this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+		this.ctx.lineWidth = 0.8; 
 		this.ctx.strokeStyle = '#323332';
 		this.ctx.beginPath();
 
+		const offsetX = width / 2 + camX;
+		const offsetY = height / 2 + camY;
+		
 		const startX = Math.floor(left / step) * step;
-		const endX = Math.ceil(right / step) * step;
 		const startY = Math.floor(top / step) * step;
-		const endY = Math.ceil(bottom / step) * step;
-
-		for (let x = startX; x <= endX; x += step) {
-			let first = true;
-			for (let y = top; y <= bottom + subStep; y += subStep) {
-				const p = this.applyDistortion(x, Math.min(y, bottom));
-				if (first) { this.ctx.moveTo(p.x, p.y); first = false; }
-				else { this.ctx.lineTo(p.x, p.y); }
+		
+		if (step > 0 && Math.abs(startX) < Number.MAX_SAFE_INTEGER) {
+			for (let x = startX; x <= right; x += step) {
+				const ySteps = Math.ceil((bottom - top) / subStep);
+				let first = true;
+				for (let i = 0; i <= ySteps; i++) {
+					const y = Math.min(top + i * subStep, bottom);
+					const p = this.applyDistortion(x, y);
+					const sx = p.x * zoom + offsetX;
+					const sy = p.y * zoom + offsetY;
+					
+					if (first) { this.ctx.moveTo(sx, sy); first = false; }
+					else { this.ctx.lineTo(sx, sy); }
+				}
 			}
-		}
 
-		for (let y = startY; y <= endY; y += step) {
-			let first = true;
-			for (let x = left; x <= right + subStep; x += subStep) {
-				const p = this.applyDistortion(Math.min(x, right), y);
-				if (first) { this.ctx.moveTo(p.x, p.y); first = false; }
-				else { this.ctx.lineTo(p.x, p.y); }
+			for (let y = startY; y <= bottom; y += step) {
+				const xSteps = Math.ceil((right - left) / subStep);
+				let first = true;
+				for (let i = 0; i <= xSteps; i++) {
+					const x = Math.min(left + i * subStep, right);
+					const p = this.applyDistortion(x, y);
+					const sx = p.x * zoom + offsetX;
+					const sy = p.y * zoom + offsetY;
+					
+					if (first) { this.ctx.moveTo(sx, sy); first = false; }
+					else { this.ctx.lineTo(sx, sy); }
+				}
 			}
 		}
 
 		this.ctx.stroke();
+		this.ctx.restore();
 	},
 	
 	drawPerformanceIndicator: function() {
@@ -1818,48 +1906,6 @@ const Rendering = {
 		this.drawPerformanceIndicator();
 	},
 	
-	applyDistortion: function(x, y) {
-		if (!window.App.sim.enableGravity || this.gridDistortion <= 0) {
-			this.distortionResult.x = x;
-			this.distortionResult.y = y;
-			return this.distortionResult;
-		}
-
-		let totalDx = 0;
-		let totalDy = 0;
-		
-		const bodies = this.distortingBodies;
-		const count = bodies.length;
-		const limit = 0.85;
-		const minDistSq = this.gridMinDist * this.gridMinDist;
-		const distortionCoeff = this.gridDistortion;
-
-		for (let i = 0; i < count; i++) {
-			const b = bodies[i];
-			const bx = b.x;
-			const by = b.y;
-			const bmass = b.mass;
-			
-			if (bmass < 1) continue;
-
-			const dx = bx - x;
-			const dy = by - y;
-			const distSq = dx*dx + dy*dy;
-			
-			const effectiveDistSq = distSq + minDistSq;
-			const strength = (bmass * distortionCoeff) / effectiveDistSq;
-			const factor = strength / (1 + strength);
-			const pull = factor * limit;
-
-			totalDx += dx * pull;
-			totalDy += dy * pull;
-		}
-
-		this.distortionResult.x = x + totalDx;
-		this.distortionResult.y = y + totalDy;
-		return this.distortionResult;
-	},
-
 	loop: function() {
 		const now = performance.now();
 		const deltaTime = now - this.lastFrameTime;

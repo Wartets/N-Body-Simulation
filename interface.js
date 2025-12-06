@@ -1521,6 +1521,18 @@ document.addEventListener('DOMContentLoaded', () => {
 	}, { passive: false });
 	
 	document.addEventListener('keydown', (e) => {
+		if (e.code === 'F11') {
+			e.preventDefault();
+			if (!document.fullscreenElement) {
+				document.documentElement.requestFullscreen();
+			} else {
+				if (document.exitFullscreen) {
+					document.exitFullscreen();
+				}
+			}
+			return;
+		}
+		
 		if (e.code === 'Space') {
 			const activeEl = document.activeElement;
 			if (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA') {
@@ -2294,7 +2306,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		['fieldDefHeader', 'fieldDefContent', 'toggleFieldDefBtn'], ['fieldDefListHeader', 'fieldsListContainer', 'toggleFieldDefListBtn'],
 		['thermalZonesListHeader', 'thermalZonesListContainer', 'toggleThermalZonesListBtn'], ['annihilationZonesListHeader', 'annihilationZonesListContainer', 'toggleAnnihilationZonesListBtn'],
 		['chaosZonesListHeader', 'chaosZonesListContainer', 'toggleChaosZonesListBtn'], ['vortexZonesListHeader', 'vortexZonesListContainer', 'toggleVortexZonesListBtn'],
-		['nullZonesListHeader', 'nullZonesListContainer', 'toggleNullZonesListBtn']
+		['nullZonesListHeader', 'nullZonesListContainer', 'toggleNullZonesListBtn'],
+		['advancedDisplayHeader', 'displayAdevancedContent', 'toggleAdvancedDisplayBtn']
 	].forEach(args => setupCollapsibleList(...args));
 
 	const bindCfgs = [

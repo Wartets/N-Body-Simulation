@@ -67,13 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (typeof expr !== 'string' || expr.trim() === '') return expr;
 
 		try {
-			const sanitizedExpr = expr.toLowerCase()
-				.replace(/\^/g, '**')
-				.replace(/pi/g, 'Math.PI')
-				.replace(/e/g, 'Math.E')
-				.replace(/,/g, '.');
+			let sanitizedExpr = expr.toLowerCase()
+				.replace(/,/g, '.')
+				.replace(/\^/g, '**');
 
-			if (/[a-df-z]/g.test(sanitizedExpr)) {
+			sanitizedExpr = sanitizedExpr.replace(/\bpi\b/g, Math.PI.toString());
+			sanitizedExpr = sanitizedExpr.replace(/\be\b/g, Math.E.toString());
+
+			if (/[^0-9.+\-*/%^()e\s]/.test(sanitizedExpr)) {
 				return expr;
 			}
 
@@ -108,22 +109,40 @@ document.addEventListener('DOMContentLoaded', () => {
 	};
 
 	const setupDraggable = (panelEl, headerEl, neighbors = []) => {
+		let isMouseDown = false;
 		let isDragging = false;
+		let startX = 0, startY = 0;
 		let offsetX = 0, offsetY = 0;
 
 		const startDrag = (clientX, clientY) => {
-			maxZIndex++;
-			panelEl.style.zIndex = maxZIndex;
-			isDragging = true;
+			isMouseDown = true;
+			startX = clientX;
+			startY = clientY;
+			
 			const rect = panelEl.getBoundingClientRect();
 			offsetX = clientX - rect.left;
 			offsetY = clientY - rect.top;
-			headerEl.style.cursor = 'grabbing';
-			panelEl.style.right = 'auto';
-			panelEl.style.left = rect.left + 'px';
 		};
 
 		const moveDrag = (clientX, clientY) => {
+			if (!isMouseDown) return;
+
+			if (!isDragging) {
+				const dx = clientX - startX;
+				const dy = clientY - startY;
+				if (dx * dx + dy * dy < 25) return;
+
+				isDragging = true;
+				maxZIndex++;
+				panelEl.style.zIndex = maxZIndex;
+				headerEl.style.cursor = 'grabbing';
+				
+				const rect = panelEl.getBoundingClientRect();
+				panelEl.style.right = 'auto';
+				panelEl.style.left = rect.left + 'px';
+				panelEl.style.top = rect.top + 'px';
+			}
+
 			if (isDragging) {
 				let newX = clientX - offsetX;
 				let newY = clientY - offsetY;
@@ -166,8 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
 		};
 
 		const endDrag = () => {
-			isDragging = false;
-			headerEl.style.cursor = 'grab';
+			isMouseDown = false;
+			if (isDragging) {
+				isDragging = false;
+				headerEl.style.cursor = 'grab';
+			}
 		};
 
 		headerEl.addEventListener('dblclick', (e) => {
@@ -215,8 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		}, {passive: false});
 
 		window.addEventListener('touchmove', (e) => {
-			if(isDragging) {
-				e.preventDefault();
+			if(isMouseDown) {
+				if (isDragging) e.preventDefault();
 				const touch = e.touches[0];
 				moveDrag(touch.clientX, touch.clientY);
 			}
@@ -851,7 +873,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 			const x = parseFloat(document.getElementById('newX').value) || 0;
 			const y = parseFloat(document.getElementById('newY').value) || 0;
-			const color = document.getElementById('presetSelect').dataset.color;
+			const presetSelect = document.getElementById('presetSelect');
+			const color = (presetSelect && presetSelect.dataset.color) ? presetSelect.dataset.color : null;
 			
 			Render.previewBody = { x, y, radius: r, color };
 			Render.showInjectionPreview = true;
@@ -860,6 +883,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		const hidePreview = () => {
 			Render.showInjectionPreview = false;
 		};
+		
+		if (window.App.ui) {
+			window.App.ui.updateInjectionPreview = updatePreview;
+		}
 
 		injInputs.forEach(id => {
 			const el = document.getElementById(id);
@@ -1253,6 +1280,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			generateRandomParameters(false, true);
 		} else {
 			generateRandomParameters(false, false);
+		}
+		
+		if (window.App.ui && window.App.ui.updateInjectionPreview) {
+			window.App.ui.updateInjectionPreview();
 		}
 	});
 	

@@ -1247,7 +1247,18 @@ const Rendering = {
 	drawInfos: function() {
 		if (!this.showCoords) return;
 
-		let text = `${this.currentWorldX.toFixed(1)}, ${this.currentWorldY.toFixed(1)}`;
+		let displayX = this.currentWorldX;
+		let displayY = this.currentWorldY;
+
+		if (this.dragMode === 'body' && this.selectedBodyId !== null) {
+			const b = window.App.sim.bodies[this.selectedBodyId];
+			if (b) {
+				displayX = b.x;
+				displayY = b.y;
+			}
+		}
+
+		let text = `${displayX.toFixed(1)}, ${displayY.toFixed(1)}`;
 		
 		if (this.dragMode === 'vector' && this.selectedBodyId !== null) {
 			const b = window.App.sim.bodies[this.selectedBodyId];

@@ -41,551 +41,564 @@
 	
 	<div id="controlPanel">
 		<div id="panelHeader">
-			<span class="app-title"><i class="fa-solid fa-sliders"></i> Parameters</span>
+			<span class="app-title"><i class="fa-solid fa-sliders"></i> Settings</span>
 			<button id="togglePanelBtn"><i class="fa-solid fa-minus"></i></button>
 		</div>
 
+		<div class="tab-bar">
+			<button class="tab-btn active" data-tab="simulation" title="Simulation"><i class="fa-solid fa-atom"></i></button>
+			<button class="tab-btn" data-tab="view" title="View"><i class="fa-solid fa-eye"></i></button>
+			<button class="tab-btn" data-tab="bodies" title="Bodies"><i class="fa-solid fa-circle-dot"></i></button>
+			<button class="tab-btn" data-tab="tools" title="Tools"><i class="fa-solid fa-toolbox"></i></button>
+			<button class="tab-btn" data-tab="infos" title="Infos"><i class="fa-solid fa-circle-info"></i></button>
+		</div>
+
 		<div id="panelContent">
-
-			<div class="control-section">
-				<div class="section-header">Simulation control</div>
-				<div class="btn-group">
-					<button id="playPauseBtn" class="btn primary">
-						<i class="fa-solid fa-pause"></i> Pause
-					</button>
-					<button id="resetBtn" class="btn danger">
-						<i class="fa-solid fa-rotate-right"></i> Reset
-					</button>
-				</div>
-				<div class="control-row" style="margin-top: 8px;">
-					<label>Time step dt <i class="fa-solid fa-circle-question help-icon" data-tooltip="Simulation time step. Higher values speed up simulation but may reduce accuracy."></i></label>
-					<span id="dtVal" class="value-display"></span>
-				</div>
-				<input type="range" id="dtSlider" min="0" max="1000" step="1">
-
-				<div class="divider-sub"></div>
-				<div class="section-header-2" style="margin-top: 8px;">Interactions</div>
-
-				<label class="toggle-row">
-					<span>Gravity <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables gravitational attraction between massive bodies."></i></span>
-					<input type="checkbox" id="gravBox" checked>
-					<div class="toggle-switch"></div>
-				</label>
-				<label class="toggle-row" style="margin-top:4px;">
-					<span>Electricity <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables attraction/repulsion forces between charged bodies."></i></span>
-					<input type="checkbox" id="elecBox">
-					<div class="toggle-switch"></div>
-				</label>
-				<label class="toggle-row" style="margin-top:4px;">
-					<span>Magnetism <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables magnetic forces based on body magnetic moments."></i></span>
-					<input type="checkbox" id="magBox">
-					<div class="toggle-switch"></div>
-				</label>
-				<label class="toggle-row" style="margin-top:4px;">
-					<span>Collisions <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables detection and resolution of physical collisions between bodies."></i></span>
-					<input type="checkbox" id="colBox">
-					<div class="toggle-switch"></div>
-				</label>
-				<label class="toggle-row" style="margin-top:4px;">
-					<span>Thermodynamics <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables heat generation from collisions and radiative cooling. Affects body properties."></i></span>
-					<input type="checkbox" id="thermoBox">
-					<div class="toggle-switch"></div>
-				</label>
-				<div id="thermoParams" class="hidden-content" style="margin-top: 8px;">
-					<div class="control-row">
-						<label>Ambient Temperature (K) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Ambient temperature for radiative cooling. -1 for absence of temperature."></i></label>
-						<input type="text" id="ambientTempInput" style="width: 60px; text-align: right; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-primary); border-radius: 3px; font-size: 11px; padding: 2px 4px;">
+			
+			<div id="tab-simulation" class="tab-pane active">
+				<div class="control-section">
+					<div class="section-header">Simulation control</div>
+					<div class="btn-group">
+						<button id="playPauseBtn" class="btn primary">
+							<i class="fa-solid fa-pause"></i> Pause
+						</button>
+						<button id="resetBtn" class="btn danger">
+							<i class="fa-solid fa-rotate-right"></i> Reset
+						</button>
 					</div>
-				</div>
-				<label class="toggle-row" style="margin-top:4px;">
-					<span>Fragmentation <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables body fragmentation from high-energy collisions and tidal forces based on integrity."></i></span>
-					<input type="checkbox" id="fragBox">
-					<div class="toggle-switch"></div>
-				</label>
-				<div id="fragParams" class="hidden-content" style="margin-top: 8px;">
-					<div class="control-row">
-						<label>Fragments Lifetime <i class="fa-solid fa-circle-question help-icon" data-tooltip="Lifetime of fragments in ticks. -1 for infinite."></i></label>
-						<input type="text" id="fragLifetimeInput" style="width: 60px; text-align: right; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-primary); border-radius: 3px; font-size: 11px; padding: 2px 4px;">
+					<div class="control-row" style="margin-top: 8px;">
+						<label>Time step dt <i class="fa-solid fa-circle-question help-icon" data-tooltip="Simulation time step. Higher values speed up simulation but may reduce accuracy."></i></label>
+						<span id="dtVal" class="value-display"></span>
 					</div>
-				</div>
-			</div>
+					<input type="range" id="dtSlider" min="0" max="1000" step="1">
 
-			<div class="divider"></div>
+					<div class="divider-sub"></div>
+					<div class="section-header-2" style="margin-top: 8px;">Interactions</div>
 
-			<div class="control-section" id="displaySection">
-				<div class="section-header toggle-header">
-					<span>Display parameters</span>
-					<button id="toggleDisplayBtn" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
-				</div>
-				
-				<div id="displayContent" class="hidden-content">
 					<label class="toggle-row">
-						<span>Tracking Barycentre <i class="fa-solid fa-circle-question help-icon" data-tooltip="Camera automatically tracks the system's center of mass."></i></span>
-						<input type="checkbox" id="camTrackingBox">
+						<span>Gravity <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables gravitational attraction between massive bodies."></i></span>
+						<input type="checkbox" id="gravBox" checked>
 						<div class="toggle-switch"></div>
 					</label>
 					<label class="toggle-row" style="margin-top:4px;">
-						<span>Auto Zoom <i class="fa-solid fa-circle-question help-icon" data-tooltip="Camera zooms automatically to keep all bodies visible."></i></span>
-						<input type="checkbox" id="camAutoZoomBox">
+						<span>Electricity <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables attraction/repulsion forces between charged bodies."></i></span>
+						<input type="checkbox" id="elecBox">
 						<div class="toggle-switch"></div>
 					</label>
 					<label class="toggle-row" style="margin-top:4px;">
-						<span>Physical Colors <i class="fa-solid fa-circle-question help-icon" data-tooltip="Color bodies based on Temperature (Hue), Velocity (Brightness), and Acceleration (Stress)."></i></span>
-						<input type="checkbox" id="physicalColorBox">
-						<div class="toggle-switch"></div>
-					</label>
-
-					<label class="toggle-row" style="margin-top:4px;">
-						<span>Show Trails <i class="fa-solid fa-circle-question help-icon" data-tooltip="Displays the recent trajectory of each body."></i></span>
-						<input type="checkbox" id="showTrailsBox" checked>
-						<div class="toggle-switch"></div>
-					</label>
-					
-					<label class="toggle-row" style="margin-top:4px;">
-						<span>Show Gravity Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes the gravitational field generated by bodies."></i></span>
-						<input type="checkbox" id="showGravFieldBox">
+						<span>Magnetism <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables magnetic forces based on body magnetic moments."></i></span>
+						<input type="checkbox" id="magBox">
 						<div class="toggle-switch"></div>
 					</label>
 					<label class="toggle-row" style="margin-top:4px;">
-						<span>Show Electric Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes the electric field generated by charged bodies."></i></span>
-						<input type="checkbox" id="showElecFieldBox">
+						<span>Collisions <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables detection and resolution of physical collisions between bodies."></i></span>
+						<input type="checkbox" id="colBox">
 						<div class="toggle-switch"></div>
 					</label>
 					<label class="toggle-row" style="margin-top:4px;">
-						<span>Show Magnetic Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes the magnetic field generated by bodies."></i></span>
-						<input type="checkbox" id="showMagFieldBox">
+						<span>Thermodynamics <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables heat generation from collisions and radiative cooling. Affects body properties."></i></span>
+						<input type="checkbox" id="thermoBox">
 						<div class="toggle-switch"></div>
 					</label>
-					<label class="toggle-row" style="margin-top:4px;">
-						<span>Show Formula Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes force fields defined by custom formulas."></i></span>
-						<input type="checkbox" id="showFormulaFieldBox">
-						<div class="toggle-switch"></div>
-					</label>
-
-					<div class="divider-sub"></div>
-					
-					<div class="section-header-2 toggle-header" id="advancedDisplayHeader">
-						<span>Advanced Display parameters</span>
-						<button id="toggleAdvancedDisplayBtn" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
+					<div id="thermoParams" class="hidden-content" style="margin-top: 8px;">
+						<div class="control-row">
+							<label>Ambient Temperature (K) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Ambient temperature for radiative cooling. -1 for absence of temperature."></i></label>
+							<input type="text" id="ambientTempInput" style="width: 60px; text-align: right; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-primary); border-radius: 3px; font-size: 11px; padding: 2px 4px;">
+						</div>
 					</div>
-
-					<div id="displayAdevancedContent" class="hidden-content">
-						<div class="control-row" style="margin-top: 4px;">
-							<label>Trail Length <i class="fa-solid fa-circle-question help-icon" data-tooltip="Number of points in each body's trail."></i></label>
-							<span id="trailLenVal" class="value-display"></span>
+					<label class="toggle-row" style="margin-top:4px;">
+						<span>Fragmentation <i class="fa-solid fa-circle-question help-icon" data-tooltip="Enables body fragmentation from high-energy collisions and tidal forces based on integrity."></i></span>
+						<input type="checkbox" id="fragBox">
+						<div class="toggle-switch"></div>
+					</label>
+					<div id="fragParams" class="hidden-content" style="margin-top: 8px;">
+						<div class="control-row">
+							<label>Fragments Lifetime <i class="fa-solid fa-circle-question help-icon" data-tooltip="Lifetime of fragments in ticks. -1 for infinite."></i></label>
+							<input type="text" id="fragLifetimeInput" style="width: 60px; text-align: right; background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-primary); border-radius: 3px; font-size: 11px; padding: 2px 4px;">
 						</div>
-						<input type="range" id="trailLenSlider" min="10" max="500" step="10">
+					</div>
+				</div>
+			</div>
 
-						<div class="control-row" style="margin-top: 4px;">
-							<label>Trail Skip (Precision) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Trail point recording frequency. Lower values are more precise."></i></label>
-							<span id="trailPrecVal" class="value-display"></span>
-						</div>
-						<input type="range" id="trailPrecSlider" min="1" max="10" step="1">
+			<div id="tab-view" class="tab-pane">
+				<div class="control-section" id="displaySection">
+					<div class="section-header">Display parameters</div>
+					
+					<div id="displayContent">
+						<label class="toggle-row">
+							<span>Tracking Barycentre <i class="fa-solid fa-circle-question help-icon" data-tooltip="Camera automatically tracks the system's center of mass."></i></span>
+							<input type="checkbox" id="camTrackingBox">
+							<div class="toggle-switch"></div>
+						</label>
+						<label class="toggle-row" style="margin-top:4px;">
+							<span>Auto Zoom <i class="fa-solid fa-circle-question help-icon" data-tooltip="Camera zooms automatically to keep all bodies visible."></i></span>
+							<input type="checkbox" id="camAutoZoomBox">
+							<div class="toggle-switch"></div>
+						</label>
+						<label class="toggle-row" style="margin-top:4px;">
+							<span>Physical Colors <i class="fa-solid fa-circle-question help-icon" data-tooltip="Color bodies based on Temperature (Hue), Velocity (Brightness), and Acceleration (Stress)."></i></span>
+							<input type="checkbox" id="physicalColorBox">
+							<div class="toggle-switch"></div>
+						</label>
+
+						<label class="toggle-row" style="margin-top:4px;">
+							<span>Show Trails <i class="fa-solid fa-circle-question help-icon" data-tooltip="Displays the recent trajectory of each body."></i></span>
+							<input type="checkbox" id="showTrailsBox" checked>
+							<div class="toggle-switch"></div>
+						</label>
 						
-						<div class="control-row" style="margin-top: 4px;">
-							<label>Prediction Length <i class="fa-solid fa-circle-question help-icon" data-tooltip="Length of the predicted future trajectory for the selected body."></i></label>
-							<span id="predictionLenVal" class="value-display"></span>
-						</div>
-						<input type="range" id="predictionLenSlider" min="0" max="70000" step="100">
+						<label class="toggle-row" style="margin-top:4px;">
+							<span>Show Gravity Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes the gravitational field generated by bodies."></i></span>
+							<input type="checkbox" id="showGravFieldBox">
+							<div class="toggle-switch"></div>
+						</label>
+						<label class="toggle-row" style="margin-top:4px;">
+							<span>Show Electric Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes the electric field generated by charged bodies."></i></span>
+							<input type="checkbox" id="showElecFieldBox">
+							<div class="toggle-switch"></div>
+						</label>
+						<label class="toggle-row" style="margin-top:4px;">
+							<span>Show Magnetic Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes the magnetic field generated by bodies."></i></span>
+							<input type="checkbox" id="showMagFieldBox">
+							<div class="toggle-switch"></div>
+						</label>
+						<label class="toggle-row" style="margin-top:4px;">
+							<span>Show Formula Field <i class="fa-solid fa-circle-question help-icon" data-tooltip="Visualizes force fields defined by custom formulas."></i></span>
+							<input type="checkbox" id="showFormulaFieldBox">
+							<div class="toggle-switch"></div>
+						</label>
+
+						<div class="divider-sub"></div>
 						
-						<div class="control-row" style="margin-top: 4px;">
-							<label>Field Grid Precision <i class="fa-solid fa-circle-question help-icon" data-tooltip="Sets the density of the field visualization grid."></i></label>
-							<span id="fieldPrecVal" class="value-display"></span>
+						<div class="section-header-2 toggle-header" id="advancedDisplayHeader">
+							<span>Advanced Display parameters</span>
+							<button id="toggleAdvancedDisplayBtn" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
 						</div>
-						<input type="range" id="fieldPrecSlider" min="10" max="100" step="1">
 
-						<div class="control-row hidden-content" style="margin-top: 4px;">
-							<label>Field Intensity Scale <i class="fa-solid fa-circle-question help-icon" data-tooltip="Adjusts field vector length sensitivity to field intensity."></i></label>
-							<span id="fieldScaleVal" class="value-display"></span>
-						</div>
-						<input type="range" id="fieldScaleSlider" class="hidden-content" min="1" max="300" step="1">
+						<div id="displayAdevancedContent" class="hidden-content">
+							<div class="control-row" style="margin-top: 4px;">
+								<label>Trail Length <i class="fa-solid fa-circle-question help-icon" data-tooltip="Number of points in each body's trail."></i></label>
+								<span id="trailLenVal" class="value-display"></span>
+							</div>
+							<input type="range" id="trailLenSlider" min="10" max="500" step="10">
 
-						<div class="control-row" style="margin-top: 4px;">
-							<label>Grid Precision <i class="fa-solid fa-circle-question help-icon" data-tooltip="Detail level of the spacetime grid."></i></label>
-							<span id="gridPrecVal" class="value-display"></span>
-						</div>
-						<input type="range" id="gridPrecSlider" min="1" max="100" step="1">
+							<div class="control-row" style="margin-top: 4px;">
+								<label>Trail Skip (Precision) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Trail point recording frequency. Lower values are more precise."></i></label>
+								<span id="trailPrecVal" class="value-display"></span>
+							</div>
+							<input type="range" id="trailPrecSlider" min="1" max="10" step="1">
+							
+							<div class="control-row" style="margin-top: 4px;">
+								<label>Prediction Length <i class="fa-solid fa-circle-question help-icon" data-tooltip="Length of the predicted future trajectory for the selected body."></i></label>
+								<span id="predictionLenVal" class="value-display"></span>
+							</div>
+							<input type="range" id="predictionLenSlider" min="0" max="70000" step="100">
+							
+							<div class="control-row" style="margin-top: 4px;">
+								<label>Field Grid Precision <i class="fa-solid fa-circle-question help-icon" data-tooltip="Sets the density of the field visualization grid."></i></label>
+								<span id="fieldPrecVal" class="value-display"></span>
+							</div>
+							<input type="range" id="fieldPrecSlider" min="10" max="100" step="1">
 
-						<div class="control-row" style="margin-top: 4px;">
-							<label>Spacetime Distortion <i class="fa-solid fa-circle-question help-icon" data-tooltip="Intensity of spacetime grid distortion by massive bodies."></i></label>
-							<span id="gridDistVal" class="value-display"></span>
-						</div>
-						<input type="range" id="gridDistSlider" min="0" max="5" step="0.01">
+							<div class="control-row hidden-content" style="margin-top: 4px;">
+								<label>Field Intensity Scale <i class="fa-solid fa-circle-question help-icon" data-tooltip="Adjusts field vector length sensitivity to field intensity."></i></label>
+								<span id="fieldScaleVal" class="value-display"></span>
+							</div>
+							<input type="range" id="fieldScaleSlider" class="hidden-content" min="1" max="300" step="1">
 
-						<div class="control-row" style="margin-top: 4px;">
-							<label>Min Def. Dist <i class="fa-solid fa-circle-question help-icon" data-tooltip="Minimum distance for distortion calculation, avoids singularities."></i></label>
-							<span id="gridMinDistVal" class="value-display"></span>
+							<div class="control-row" style="margin-top: 4px;">
+								<label>Grid Precision <i class="fa-solid fa-circle-question help-icon" data-tooltip="Detail level of the spacetime grid."></i></label>
+								<span id="gridPrecVal" class="value-display"></span>
+							</div>
+							<input type="range" id="gridPrecSlider" min="1" max="100" step="1">
+
+							<div class="control-row" style="margin-top: 4px;">
+								<label>Spacetime Distortion <i class="fa-solid fa-circle-question help-icon" data-tooltip="Intensity of spacetime grid distortion by massive bodies."></i></label>
+								<span id="gridDistVal" class="value-display"></span>
+							</div>
+							<input type="range" id="gridDistSlider" min="0" max="5" step="0.01">
+
+							<div class="control-row" style="margin-top: 4px;">
+								<label>Min Def. Dist <i class="fa-solid fa-circle-question help-icon" data-tooltip="Minimum distance for distortion calculation, avoids singularities."></i></label>
+								<span id="gridMinDistVal" class="value-display"></span>
+							</div>
+							<input type="range" id="gridMinDistSlider" min="0.1" max="50" step="0.1">
 						</div>
-						<input type="range" id="gridMinDistSlider" min="0.1" max="50" step="0.1">
 					</div>
 				</div>
 			</div>
-			
-			<div class="divider"></div>
 
-			<div class="control-section collapsed-section" id="injectionSection">
-				<div class="section-header toggle-header">
-					<span>Injection parameters</span>
-					<button id="toggleInjectionBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+			<div id="tab-bodies" class="tab-pane">
+				<div class="control-section" id="injectionSection">
+					<div class="section-header toggle-header" id="injectionHeader">
+						<span>Injection parameters</span>
+						<button id="toggleInjectionBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+					</div>
+									
+					<div id="injectionContent">
+						<div class="grid-2-col">
+							<div class="input-wrapper" style="grid-column: span 3;">
+								<label>Preset Object <i class="fa-solid fa-circle-question help-icon" data-tooltip="Selects a predefined object type with realistic physical parameters."></i></label>
+								<select id="presetSelect">
+									<option value="">Custom</option>
+								</select>
+							</div>
+							<div class="input-wrapper"><label>Mass <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body mass. Drag label to adjust (Shift: precise, Ctrl: fast). Set to -1 for a fixed body."></i></label><input type="text" id="newMass"></div>
+							<div class="input-wrapper"><label>Radius <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body radius for collisions."></i></label><input type="text" id="newRadius"></div>
+							<div class="input-wrapper"><label>Position X <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial X coordinate."></i></label><input type="text" id="newX"></div>
+							<div class="input-wrapper"><label>Position Y <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial Y coordinate."></i></label><input type="text" id="newY"></div>
+							<div class="input-wrapper"><label>Velocity X <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial velocity on X axis."></i></label><input type="text" id="newVX"></div>
+							<div class="input-wrapper"><label>Velocity Y <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial velocity on Y axis."></i></label><input type="text" id="newVY"></div>
+							<div class="input-wrapper"><label>Acceleration X <i class="fa-solid fa-circle-question help-icon" data-tooltip="Constant acceleration applied on X axis."></i></label><input type="text" id="newAX"></div>
+							<div class="input-wrapper"><label>Acceleration Y <i class="fa-solid fa-circle-question help-icon" data-tooltip="Constant acceleration applied on Y axis."></i></label><input type="text" id="newAY"></div>
+							<div class="input-wrapper"><label>Charge <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body electric charge."></i></label><input type="text" id="newCharge"></div>
+							<div class="input-wrapper"><label>Mag. Moment <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body magnetic moment."></i></label><input type="text" id="newMagMoment"></div>
+							<div class="input-wrapper"><label>Rot. Speed <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body rotation speed."></i></label><input type="text" id="newRotationSpeed"></div>
+							<div class="input-wrapper"><label>Friction Coeff. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Friction coefficient during collisions."></i></label><input type="text" id="newFriction" min="0" max="2" step="0.01"></div>
+							<div class="input-wrapper"><label>Integrity <i class="fa-solid fa-circle-question help-icon" data-tooltip="Structural integrity. Threshold for fragmentation from collisions or tidal forces."></i></label><input type="text" id="newIntegrity"></div>
+							<div class="input-wrapper"><label>Lifetime (ticks) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body lifetime in simulation 'ticks'. -1 for infinite."></i></label><input type="text" id="newLifetime" min="-1" step="1"></div>
+						</div>
+
+						<div class="divider-sub" style="margin-top: 8px;"></div>
+						<div class="section-header-2" style="margin-bottom: 5px;">Thermodynamics</div>
+						
+						<div class="grid-2-col">
+							<div class="input-wrapper"><label>Temperature <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial body temperature in Kelvin."></i></label><input type="text" id="newTemperature"></div>
+							<div class="input-wrapper"><label>Heat Cap. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Specific Heat Capacity (J/kg·K). Thermal inertia."></i></label><input type="text" id="newSpecificHeat"></div>
+							<div class="input-wrapper"><label>Absorp. Fact. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Absorption Factor (0-1). Fraction of collision energy converted to heat."></i></label><input type="text" id="newAbsorptionFactor"></div>
+							<div class="input-wrapper"><label>Crit. Temp <i class="fa-solid fa-circle-question help-icon" data-tooltip="Critical Temperature (K) where material properties change."></i></label><input type="text" id="newCriticalTemp"></div>
+							<div class="input-wrapper"><label>Trans. Fact. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Transition Factor. Defines the softness of the material property change around critical temperature."></i></label><input type="text" id="newTransitionFactor"></div>
+							<div class="input-wrapper"><label>Restit. (Cold) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Base restitution coefficient (solid state)."></i></label><input type="text" id="newE_base"></div>
+							<div class="input-wrapper"><label>Restit. (Hot) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Minimum restitution coefficient (liquid state)."></i></label><input type="text" id="newE_min"></div>
+							<div class="input-wrapper"><label>Young's M. (Cold) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Base Young's Modulus (solid state)."></i></label><input type="text" id="newY_base"></div>
+							<div class="input-wrapper"><label>Young's M. (Hot) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Minimum Young's Modulus (liquid state)."></i></label><input type="text" id="newY_min"></div>
+						</div>
+						
+						<div class="divider-sub"></div>
+						
+						<div class="input-wrapper" style="margin-top:5px;">
+							<button id="randomizeBtn" class="btn secondary"><i class="fa-solid fa-dice"></i> Random</button>
+							<button id="addBodyBtn" class="btn action"><i class="fa-solid fa-plus"></i> Inject</button>
+						</div>
+						
+						<div class="divider-sub"></div>
+						
+						<div class="input-wrapper">
+							<label>Global Preset <i class="fa-solid fa-circle-question help-icon" data-tooltip="Loads a complete simulation configuration (bodies, zones, parameters)."></i></label>
+							<div style="display:flex; gap:5px;">
+								<select id="simPresetSelect" style="flex:1;">
+								</select>
+								<button id="loadSimPresetBtn" class="btn secondary" style="width:auto;" title="Load Preset"><i class="fa-solid fa-upload"></i></button>
+							</div>
+						</div>
+					</div>
 				</div>
-								
-				<div id="injectionContent">
+
+				<div class="divider"></div>
+
+				<div class="control-section">
+					<div class="section-header toggle-header" id="bodiesHeader">
+						<span>Active bodies <span id="bodyCount">0</span></span>
+						<button id="toggleBodiesBtn" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
+					</div>
+					<div id="bodySortContainer" class="hidden-content" style="margin-bottom: 8px; display: flex; gap: 5px;"></div>
+					<div id="bodiesListContainer" class="hidden-content">
+					</div>
+				</div>
+			</div>
+
+			<div id="tab-tools" class="tab-pane">
+				<div class="control-section">
+					<div class="section-header">Global Actions</div>
 					<div class="grid-2-col">
-						<div class="input-wrapper" style="grid-column: span 3;">
-							<label>Preset Object <i class="fa-solid fa-circle-question help-icon" data-tooltip="Selects a predefined object type with realistic physical parameters."></i></label>
-							<select id="presetSelect" style="width:100%; padding:6px; background:var(--input-bg); border:1px solid var(--input-border); color:var(--text-primary); border-radius:3px; font-family:var(--font-ui); font-size:11px; outline:none;">
-								<option value="">Custom</option>
-							</select>
-						</div>
-						<div class="input-wrapper"><label>Mass <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body mass. Drag label to adjust (Shift: precise, Ctrl: fast). Set to -1 for a fixed body."></i></label><input type="text" id="newMass"></div>
-						<div class="input-wrapper"><label>Radius <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body radius for collisions."></i></label><input type="text" id="newRadius"></div>
-						<div class="input-wrapper"><label>Position X <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial X coordinate."></i></label><input type="text" id="newX"></div>
-						<div class="input-wrapper"><label>Position Y <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial Y coordinate."></i></label><input type="text" id="newY"></div>
-						<div class="input-wrapper"><label>Velocity X <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial velocity on X axis."></i></label><input type="text" id="newVX"></div>
-						<div class="input-wrapper"><label>Velocity Y <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial velocity on Y axis."></i></label><input type="text" id="newVY"></div>
-						<div class="input-wrapper"><label>Acceleration X <i class="fa-solid fa-circle-question help-icon" data-tooltip="Constant acceleration applied on X axis."></i></label><input type="text" id="newAX"></div>
-						<div class="input-wrapper"><label>Acceleration Y <i class="fa-solid fa-circle-question help-icon" data-tooltip="Constant acceleration applied on Y axis."></i></label><input type="text" id="newAY"></div>
-						<div class="input-wrapper"><label>Charge <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body electric charge."></i></label><input type="text" id="newCharge"></div>
-						<div class="input-wrapper"><label>Mag. Moment <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body magnetic moment."></i></label><input type="text" id="newMagMoment"></div>
-						<div class="input-wrapper"><label>Rot. Speed <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body rotation speed."></i></label><input type="text" id="newRotationSpeed"></div>
-						<div class="input-wrapper"><label>Friction Coeff. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Friction coefficient during collisions."></i></label><input type="text" id="newFriction" min="0" max="2" step="0.01"></div>
-						<div class="input-wrapper"><label>Integrity <i class="fa-solid fa-circle-question help-icon" data-tooltip="Structural integrity. Threshold for fragmentation from collisions or tidal forces."></i></label><input type="text" id="newIntegrity"></div>
-						<div class="input-wrapper"><label>Lifetime (ticks) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Body lifetime in simulation 'ticks'. -1 for infinite."></i></label><input type="text" id="newLifetime" min="-1" step="1"></div>
+						<button id="zeroVelBtn" class="btn secondary" title="Set all velocities to zero">
+							<i class="fa-solid fa-stop"></i> Stop
+						</button>
+						<button id="reverseVelBtn" class="btn secondary" title="Reverse time flow">
+							<i class="fa-solid fa-backward"></i> Reverse
+						</button>
+						<button id="killRotBtn" class="btn secondary" title="Reset angular velocity to zero">
+							<i class="fa-solid fa-arrows-spin"></i> No Spin
+						</button>
+						<button id="snapBtn" class="btn secondary" title="Align bodies to grid (50px)">
+							<i class="fa-solid fa-border-all"></i> Snap
+						</button>
+						<button id="scatterBtn" class="btn secondary" title="Randomize positions in view">
+							<i class="fa-solid fa-shuffle"></i> Scatter
+						</button>
+						<button id="equalMassBtn" class="btn secondary" title="Set all masses to average">
+							<i class="fa-solid fa-scale-balanced"></i> Equalize
+						</button>
+						<button id="cullBtn" class="btn danger" style="grid-column: span 3;" title="Remove all bodies outside the current camera view">
+							<i class="fa-solid fa-trash-can"></i> Cull Outside View
+						</button>
 					</div>
+				</div>
+				
+				<div class="divider"></div>
 
-					<div class="divider-sub" style="margin-top: 8px;"></div>
-					<div class="section-header-2" style="margin-bottom: 5px;">Thermodynamics</div>
-					
-					<div class="grid-2-col">
-						<div class="input-wrapper"><label>Temperature <i class="fa-solid fa-circle-question help-icon" data-tooltip="Initial body temperature in Kelvin."></i></label><input type="text" id="newTemperature"></div>
-						<div class="input-wrapper"><label>Heat Cap. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Specific Heat Capacity (J/kg·K). Thermal inertia."></i></label><input type="text" id="newSpecificHeat"></div>
-						<div class="input-wrapper"><label>Absorp. Fact. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Absorption Factor (0-1). Fraction of collision energy converted to heat."></i></label><input type="text" id="newAbsorptionFactor"></div>
-						<div class="input-wrapper"><label>Crit. Temp <i class="fa-solid fa-circle-question help-icon" data-tooltip="Critical Temperature (K) where material properties change."></i></label><input type="text" id="newCriticalTemp"></div>
-						<div class="input-wrapper"><label>Trans. Fact. <i class="fa-solid fa-circle-question help-icon" data-tooltip="Transition Factor. Defines the softness of the material property change around critical temperature."></i></label><input type="text" id="newTransitionFactor"></div>
-						<div class="input-wrapper"><label>Restit. (Cold) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Base restitution coefficient (solid state)."></i></label><input type="text" id="newE_base"></div>
-						<div class="input-wrapper"><label>Restit. (Hot) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Minimum restitution coefficient (liquid state)."></i></label><input type="text" id="newE_min"></div>
-						<div class="input-wrapper"><label>Young's M. (Cold) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Base Young's Modulus (solid state)."></i></label><input type="text" id="newY_base"></div>
-						<div class="input-wrapper"><label>Young's M. (Hot) <i class="fa-solid fa-circle-question help-icon" data-tooltip="Minimum Young's Modulus (liquid state)."></i></label><input type="text" id="newY_min"></div>
-					</div>
-					
-					<div class="divider-sub"></div>
-					
-					<div class="input-wrapper" style="margin-top:5px;">
-						<button id="randomizeBtn" class="btn secondary"><i class="fa-solid fa-dice"></i> Random</button>
-						<button id="addBodyBtn" class="btn action"><i class="fa-solid fa-plus"></i> Inject</button>
-					</div>
-					
-					<div class="divider-sub"></div>
-					
-					<div class="input-wrapper">
-						<label>Global Preset <i class="fa-solid fa-circle-question help-icon" data-tooltip="Loads a complete simulation configuration (bodies, zones, parameters)."></i></label>
-						<div style="display:flex; gap:5px;">
-							<select id="simPresetSelect" style="flex:1; padding:6px; background:var(--input-bg); border:1px solid var(--input-border); color:var(--text-primary); border-radius:3px; outline:none; font-family:var(--font-ui); font-size:11px;">
-							</select>
-							<button id="loadSimPresetBtn" class="btn secondary" style="width:auto;" title="Load Preset"><i class="fa-solid fa-upload"></i></button>
+				<div class="control-section">
+					<div class="section-header">Field Definition</div>
+					<button id="addFieldBtn" class="btn secondary"><i class="fa-solid fa-plus"></i> Add Formula Field</button>
+
+					<div id="fieldDefCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header toggle-header" id="fieldDefListHeader">
+							<span>Defined Fields <span id="fieldListCount">0</span></span>
+							<button id="toggleFieldDefListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="fieldsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
 						</div>
 					</div>
 				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Elastic Bonds</div>
+					<button id="toggleBondToolBtn" class="btn secondary">
+						<i class="fa-solid fa-link"></i> Link Bodies (Off)
+					</button>
+					
+					<div id="bondsCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header toggle-header" id="bondsListHeader">
+							<span>Defined Bonds <span id="bondListCount">0</span></span>
+							<button id="toggleBondsListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="bondsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Solid Barriers</div>
+					<button id="toggleBarrierToolBtn" class="btn secondary">
+						<i class="fa-solid fa-road"></i> Draw Barrier (Off)
+					</button>
+					
+					<div id="barriersCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header toggle-header" id="barriersListHeader">
+							<span>Defined Barriers <span id="barrierListCount">0</span></span>
+							<button id="toggleBarriersListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="barriersListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Periodic Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleZoneDrawBtn" class="btn secondary">
+							<i class="fa-solid fa-pen-ruler"></i> Draw Zone (Off)
+						</button>
+						<div id="periodicZoneShapeSelector" class="btn-group" style="display: none;">
+							<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+							<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+						</div>
+					</div>
+					
+					<div id="periodicZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="periodicZonesListHeader">
+							<span>Defined Zones <span id="periodicZoneListCount">0</span></span>
+							<button id="togglePeriodicZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="zonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Viscosity Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleViscosityZoneBtn" class="btn secondary">
+							<i class="fa-solid fa-water"></i> Draw Viscosity (Off)
+						</button>
+						<div id="viscosityZoneShapeSelector" class="btn-group" style="display: none;">
+							<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+							<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+						</div>
+					</div>
+					
+					<div id="viscosityZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="viscosityZonesListHeader">
+							<span>Defined Zones <span id="viscosityZoneListCount">0</span></span>
+							<button id="toggleViscosityZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="viscosityZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Field Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleFieldZoneToolBtn" class="btn secondary">
+							<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)
+						</button>
+						<div id="fieldZoneShapeSelector" class="btn-group" style="display: none;">
+							<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+							<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+						</div>
+					</div>
+					
+					<div id="fieldZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="fieldZonesListHeader">
+							<span>Defined Zones <span id="fieldZoneListCount">0</span></span>
+							<button id="toggleFieldZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="fieldZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Thermal Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleThermalZoneBtn" class="btn secondary">
+							<i class="fa-solid fa-temperature-high"></i> Draw Thermal (Off)
+						</button>
+						<div id="thermalZoneShapeSelector" class="btn-group" style="display: none;">
+							<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+							<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+						</div>
+					</div>
+					
+					<div id="thermalZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="thermalZonesListHeader">
+							<span>Defined Zones <span id="thermalZoneListCount">0</span></span>
+							<button id="toggleThermalZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="thermalZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Annihilation Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleAnnihilationZoneBtn" class="btn secondary">
+							<i class="fa-solid fa-skull-crossbones"></i> Draw Annihilation (Off)
+						</button>
+						<div id="annihilationZoneShapeSelector" class="btn-group" style="display: none;">
+							<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+							<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+						</div>
+					</div>
+					
+					<div id="annihilationZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="annihilationZonesListHeader">
+							<span>Defined Zones <span id="annihilationZoneListCount">0</span></span>
+							<button id="toggleAnnihilationZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="annihilationZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Chaos Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleChaosZoneBtn" class="btn secondary">
+							<i class="fa-solid fa-hurricane"></i> Draw Chaos (Off)
+						</button>
+						<div id="chaosZoneShapeSelector" class="btn-group" style="display: none;">
+							<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+							<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+						</div>
+					</div>
+					
+					<div id="chaosZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="chaosZonesListHeader">
+							<span>Defined Zones <span id="chaosZoneListCount">0</span></span>
+							<button id="toggleChaosZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="chaosZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Vortex Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleVortexZoneBtn" class="btn secondary">
+							<i class="fa-solid fa-fan"></i> Draw Vortex (Off)
+						</button>
+					</div>
+					
+					<div id="vortexZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="vortexZonesListHeader">
+							<span>Defined Zones <span id="vortexZoneListCount">0</span></span>
+							<button id="toggleVortexZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="vortexZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div class="divider-sub"></div>
+				
+				<div class="control-section">
+					<div class="section-header">Null Zones</div>
+					<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
+						<button id="toggleNullZoneBtn" class="btn secondary">
+							<i class="fa-solid fa-ban"></i> Draw Null Zone (Off)
+						</button>
+						<div id="nullZoneShapeSelector" class="btn-group" style="display: none;">
+							<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
+							<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
+						</div>
+					</div>
+					
+					<div id="nullZonesCollapsible" style="display: none;">
+						<div class="divider-sub"></div>
+						<div class="section-header-2 toggle-header" id="nullZonesListHeader">
+							<span>Defined Zones <span id="nullZoneListCount">0</span></span>
+							<button id="toggleNullZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
+						</div>
+						<div id="nullZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+						</div>
+					</div>
+				</div>
+				
+				<div id="toolsContent" class="hidden-content">
+				</div>
 			</div>
 
-			<div class="divider"></div>
+			<div id="tab-infos" class="tab-pane">
+				<div class="control-section">
+					<div class="section-header">Infos</div>
+					<div style="font-size: 11px; color: var(--text-secondary);">
+						<p>Simulation info placeholder.</p>
+					</div>
+				</div>
+			</div>
 
-			<div class="control-section">
-				<div class="section-header toggle-header" id="bodiesHeader">
-					<span>Active bodies <span id="bodyCount">0</span></span>
-					<button id="toggleBodiesBtn" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
-				</div>
-				<div id="bodySortContainer" class="hidden-content" style="margin-bottom: 8px; display: flex; gap: 5px;"></div>
-				<div id="bodiesListContainer" class="hidden-content">
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<div id="toolsPanel" class="collapsed">
-		<div id="toolsHeader">
-			<button id="toggleToolsBtn"><i class="fa-solid fa-plus"></i></button>
-			<span class="app-title">Tools <i class="fa-solid fa-toolbox"></i></span>
-		</div>
-		
-		<div id="toolsContent">
-			<div class="control-section">
-				<div class="section-header">Global Actions</div>
-				<div class="grid-2-col">
-					<button id="zeroVelBtn" class="btn secondary" title="Set all velocities to zero">
-						<i class="fa-solid fa-stop"></i> Stop
-					</button>
-					<button id="reverseVelBtn" class="btn secondary" title="Reverse time flow">
-						<i class="fa-solid fa-backward"></i> Reverse
-					</button>
-					<button id="killRotBtn" class="btn secondary" title="Reset angular velocity to zero">
-						<i class="fa-solid fa-arrows-spin"></i> No Spin
-					</button>
-					<button id="snapBtn" class="btn secondary" title="Align bodies to grid (50px)">
-						<i class="fa-solid fa-border-all"></i> Snap
-					</button>
-					<button id="scatterBtn" class="btn secondary" title="Randomize positions in view">
-						<i class="fa-solid fa-shuffle"></i> Scatter
-					</button>
-					<button id="equalMassBtn" class="btn secondary" title="Set all masses to average">
-						<i class="fa-solid fa-scale-balanced"></i> Equalize
-					</button>
-					<button id="cullBtn" class="btn danger" style="grid-column: span 3;" title="Remove all bodies outside the current camera view">
-						<i class="fa-solid fa-trash-can"></i> Cull Outside View
-					</button>
-				</div>
-			</div>
-			
-			<div class="divider"></div>
-
-			<div class="control-section">
-				<div class="section-header">Field Definition</div>
-				<button id="addFieldBtn" class="btn secondary"><i class="fa-solid fa-plus"></i> Add Formula Field</button>
-
-				<div id="fieldDefCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header toggle-header" id="fieldDefListHeader">
-						<span>Defined Fields <span id="fieldListCount">0</span></span>
-						<button id="toggleFieldDefListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="fieldsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Elastic Bonds</div>
-				<button id="toggleBondToolBtn" class="btn secondary">
-					<i class="fa-solid fa-link"></i> Link Bodies (Off)
-				</button>
-				
-				<div id="bondsCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header toggle-header" id="bondsListHeader">
-						<span>Defined Bonds <span id="bondListCount">0</span></span>
-						<button id="toggleBondsListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="bondsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Solid Barriers</div>
-				<button id="toggleBarrierToolBtn" class="btn secondary">
-					<i class="fa-solid fa-road"></i> Draw Barrier (Off)
-				</button>
-				
-				<div id="barriersCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header toggle-header" id="barriersListHeader">
-						<span>Defined Barriers <span id="barrierListCount">0</span></span>
-						<button id="toggleBarriersListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="barriersListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Periodic Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleZoneDrawBtn" class="btn secondary">
-						<i class="fa-solid fa-pen-ruler"></i> Draw Zone (Off)
-					</button>
-					<div id="periodicZoneShapeSelector" class="btn-group" style="display: none;">
-						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
-						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
-					</div>
-				</div>
-				
-				<div id="periodicZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="periodicZonesListHeader">
-						<span>Defined Zones <span id="periodicZoneListCount">0</span></span>
-						<button id="togglePeriodicZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="zonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Viscosity Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleViscosityZoneBtn" class="btn secondary">
-						<i class="fa-solid fa-water"></i> Draw Viscosity (Off)
-					</button>
-					<div id="viscosityZoneShapeSelector" class="btn-group" style="display: none;">
-						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
-						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
-					</div>
-				</div>
-				
-				<div id="viscosityZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="viscosityZonesListHeader">
-						<span>Defined Zones <span id="viscosityZoneListCount">0</span></span>
-						<button id="toggleViscosityZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="viscosityZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Field Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleFieldZoneToolBtn" class="btn secondary">
-						<i class="fa-solid fa-arrow-down"></i> Draw Field (Off)
-					</button>
-					<div id="fieldZoneShapeSelector" class="btn-group" style="display: none;">
-						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
-						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
-					</div>
-				</div>
-				
-				<div id="fieldZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="fieldZonesListHeader">
-						<span>Defined Zones <span id="fieldZoneListCount">0</span></span>
-						<button id="toggleFieldZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="fieldZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Thermal Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleThermalZoneBtn" class="btn secondary">
-						<i class="fa-solid fa-temperature-high"></i> Draw Thermal (Off)
-					</button>
-					<div id="thermalZoneShapeSelector" class="btn-group" style="display: none;">
-						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
-						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
-					</div>
-				</div>
-				
-				<div id="thermalZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="thermalZonesListHeader">
-						<span>Defined Zones <span id="thermalZoneListCount">0</span></span>
-						<button id="toggleThermalZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="thermalZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Annihilation Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleAnnihilationZoneBtn" class="btn secondary">
-						<i class="fa-solid fa-skull-crossbones"></i> Draw Annihilation (Off)
-					</button>
-					<div id="annihilationZoneShapeSelector" class="btn-group" style="display: none;">
-						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
-						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
-					</div>
-				</div>
-				
-				<div id="annihilationZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="annihilationZonesListHeader">
-						<span>Defined Zones <span id="annihilationZoneListCount">0</span></span>
-						<button id="toggleAnnihilationZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="annihilationZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Chaos Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleChaosZoneBtn" class="btn secondary">
-						<i class="fa-solid fa-hurricane"></i> Draw Chaos (Off)
-					</button>
-					<div id="chaosZoneShapeSelector" class="btn-group" style="display: none;">
-						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
-						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
-					</div>
-				</div>
-				
-				<div id="chaosZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="chaosZonesListHeader">
-						<span>Defined Zones <span id="chaosZoneListCount">0</span></span>
-						<button id="toggleChaosZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="chaosZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Vortex Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleVortexZoneBtn" class="btn secondary">
-						<i class="fa-solid fa-fan"></i> Draw Vortex (Off)
-					</button>
-				</div>
-				
-				<div id="vortexZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="vortexZonesListHeader">
-						<span>Defined Zones <span id="vortexZoneListCount">0</span></span>
-						<button id="toggleVortexZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="vortexZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
-			
-			<div class="divider-sub"></div>
-			
-			<div class="control-section">
-				<div class="section-header">Null Zones</div>
-				<div class="tool-group" style="display: flex; gap: 5px; align-items: center;">
-					<button id="toggleNullZoneBtn" class="btn secondary">
-						<i class="fa-solid fa-ban"></i> Draw Null Zone (Off)
-					</button>
-					<div id="nullZoneShapeSelector" class="btn-group" style="display: none;">
-						<button class="btn secondary active" data-shape="rectangle" title="Rectangle"><i class="fa-solid fa-square"></i></button>
-						<button class="btn secondary" data-shape="circle" title="Circle"><i class="fa-solid fa-circle"></i></button>
-					</div>
-				</div>
-				
-				<div id="nullZonesCollapsible" style="display: none;">
-					<div class="divider-sub"></div>
-					<div class="section-header-2 toggle-header" id="nullZonesListHeader">
-						<span>Defined Zones <span id="nullZoneListCount">0</span></span>
-						<button id="toggleNullZonesListBtn" class="btn-icon"><i class="fa-solid fa-chevron-down"></i></button>
-					</div>
-					<div id="nullZonesListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-					</div>
-				</div>
-			</div>
 		</div>
 	</div>
 	

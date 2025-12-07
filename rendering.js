@@ -1301,20 +1301,18 @@ const Rendering = {
 		}
 
 		const controlPanel = document.getElementById('controlPanel');
-		const toolsPanel = document.getElementById('toolsPanel');
 		const cpRect = controlPanel.getBoundingClientRect();
-		const tpRect = toolsPanel.getBoundingClientRect();
 
 		const overlaps = (rect) => {
 			return (x < rect.right && x + boxWidth > rect.left && y < rect.bottom && y + boxHeight > rect.top);
 		};
 		
-		if (overlaps(cpRect) || overlaps(tpRect)) {
+		if (overlaps(cpRect)) {
 			y = my + 20;
-			if (overlaps(cpRect) || overlaps(tpRect)) {
+			if (overlaps(cpRect)) {
 				x = mx - boxWidth - 20;
 				y = my - boxHeight - 10;
-				if (overlaps(cpRect) || overlaps(tpRect)) {
+				if (overlaps(cpRect)) {
 					x = mx - boxWidth - 20;
 					y = my + 20;
 				}

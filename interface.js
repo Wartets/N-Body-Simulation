@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	const toggleBtn = document.getElementById('togglePanelBtn');
 	const panel = document.getElementById('controlPanel');
 	const header = document.getElementById('panelHeader');
-	const toolsPanel = document.getElementById('toolsPanel');
-	const toolsHeader = document.getElementById('toolsHeader');
 	const toggleInjBtn = document.getElementById('toggleInjectionBtn');
 	const injContent = document.getElementById('injectionContent');
 	const toggleDisplayBtn = document.getElementById('toggleDisplayBtn');
@@ -34,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	const barriersListContainer = document.getElementById('barriersListContainer');
 	const bondToolBtn = document.getElementById('toggleBondToolBtn');
 	const playBtn = document.getElementById('playPauseBtn');
-	const toggleToolsBtn = document.getElementById('toggleToolsBtn');
 	const dtSlider = document.getElementById('dtSlider');
 	const dtDisplay = document.getElementById('dtVal');
 	const thermoBox = document.getElementById('thermoBox');
@@ -52,6 +49,34 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (Schema[key].inputId) return Schema[key].inputId;
 		const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 		return `new${capKey}`;
+	};
+
+	const initTabs = () => {
+		const tabBtns = document.querySelectorAll('.tab-btn');
+		const tabPanes = document.querySelectorAll('.tab-pane');
+		const TAB_STORAGE_KEY = 'nbody_active_tab';
+
+		const switchTab = (tabId) => {
+			tabBtns.forEach(btn => {
+				btn.classList.toggle('active', btn.dataset.tab === tabId);
+			});
+			tabPanes.forEach(pane => {
+				pane.classList.toggle('active', pane.id === `tab-${tabId}`);
+			});
+			localStorage.setItem(TAB_STORAGE_KEY, tabId);
+		};
+
+		tabBtns.forEach(btn => {
+			btn.addEventListener('click', () => {
+				const tabId = btn.dataset.tab;
+				switchTab(tabId);
+			});
+		});
+
+		const savedTab = localStorage.getItem(TAB_STORAGE_KEY);
+		if (savedTab && document.getElementById(`tab-${savedTab}`)) {
+			switchTab(savedTab);
+		}
 	};
 
 	const inputsToParse = Object.keys(Schema)
@@ -122,6 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
 			const rect = panelEl.getBoundingClientRect();
 			offsetX = clientX - rect.left;
 			offsetY = clientY - rect.top;
+			
+			// Disable transition for instant response
+			panelEl.style.transition = 'none';
 		};
 
 		const moveDrag = (clientX, clientY) => {
@@ -162,20 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
 				if (Math.abs(newY - frameMargin) < snapThreshold) newY = frameMargin;
 				else if (Math.abs((newY + pH) - (winH - frameMargin)) < snapThreshold) newY = winH - frameMargin - pH;
 
-				neighbors.forEach(neighbor => {
-					const nRect = neighbor.getBoundingClientRect();
-					
-					if (Math.abs(newX - (nRect.left + nRect.width)) < snapThreshold) newX = nRect.left + nRect.width;
-					if (Math.abs((newX + pW) - nRect.left) < snapThreshold) newX = nRect.left - pW;
-					if (Math.abs(newX - nRect.left) < snapThreshold) newX = nRect.left;
-					if (Math.abs((newX + pW) - (nRect.left + nRect.width)) < snapThreshold) newX = nRect.left + nRect.width - pW;
-
-					if (Math.abs(newY - (nRect.top + nRect.height)) < snapThreshold) newY = nRect.top + nRect.height;
-					if (Math.abs((newY + pH) - nRect.top) < snapThreshold) newY = nRect.top - pH;
-					if (Math.abs(newY - nRect.top) < snapThreshold) newY = nRect.top;
-					if (Math.abs((newY + pH) - (nRect.top + nRect.height)) < snapThreshold) newY = nRect.top + nRect.height - pH;
-				});
-
 				newX = Math.max(0, Math.min(winW - pW, newX));
 				newY = Math.max(0, Math.min(winH - pH, newY));
 
@@ -189,6 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (isDragging) {
 				isDragging = false;
 				headerEl.style.cursor = 'grab';
+				// Restore transition
+				panelEl.style.transition = '';
 			}
 		};
 
@@ -259,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const zoneConfigs = {
 		periodicZone: mkZoneCfg('zonesListContainer', 'periodicZonesCollapsible', 'periodicZoneListCount', 'periodicZones', 'removePeriodicZone', '#e67e22', 'selectedZoneId', 'selectedZoneId', 
 			[{ label: 'Position X', key: 'x' }, { label: 'Position Y', key: 'y' }, { label: 'Width', key: 'width', min: 1, tooltip: `Set 'inf' for infinite.` }, { label: 'Height', key: 'height', min: 1, tooltip: `Set 'inf' for infinite.` }],
-			(z) => `<div class="mini-input-group" style="margin-top:4px;"><label>Trigger Mode</label><select class="inp-ztype" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid #3a3a3a; color:#e0e0e0; font-size:10px; border-radius:2px;"><option value="center" ${z.type === 'center' ? 'selected' : ''}>Center</option><option value="radius" ${z.type === 'radius' ? 'selected' : ''}>Radius</option></select></div>`,
+			(z) => `<div class="mini-input-group" style="margin-top:4px;"><label>Trigger Mode</label><select class="inp-ztype"><option value="center" ${z.type === 'center' ? 'selected' : ''}>Center</option><option value="radius" ${z.type === 'radius' ? 'selected' : ''}>Radius</option></select></div>`,
 			(d, z) => d.querySelector('.inp-ztype').addEventListener('change', e => z.type = e.target.value)
 		),
 		viscosityZone: mkZoneCfg('viscosityZonesListContainer', 'viscosityZonesCollapsible', 'viscosityZoneListCount', 'viscosityZones', 'removeViscosityZone', '#3498db', 'selectedViscosityZoneId', 'selectedViscosityZoneId',
@@ -322,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					const isMatch = b.type === p.type && Math.abs(b.stiffness - p.stiffness) < 0.001;
 					presetOptions += `<option value="${key}" ${isMatch ? 'selected' : ''}>${p.name}</option>`;
 				});
-				return `<div style="font-size:9px; color:var(--text-secondary); margin-bottom:4px;">${b1Name} <i class="fa-solid fa-link"></i> ${b2Name}</div><div class="mini-input-group"><label>Preset</label><select class="inp-btype" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid #3a3a3a; color:#e0e0e0; font-size:10px; border-radius:2px;">${presetOptions}</select></div>`;
+				return `<div style="font-size:9px; color:var(--text-secondary); margin-bottom:4px;">${b1Name} <i class="fa-solid fa-link"></i> ${b2Name}</div><div class="mini-input-group"><label>Preset</label><select class="inp-btype">${presetOptions}</select></div>`;
 			},
 			(d, b, updateInputs) => {
 				d.querySelector('.inp-btype').addEventListener('change', (e) => {
@@ -1054,6 +1070,92 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	};
 	
+	const setupBodyDragAndDrop = () => {
+		let isDragging = false;
+		let dragIndex = -1;
+		let startY = 0;
+		let dragEl = null;
+		
+		bodiesContainer.addEventListener('mousedown', (e) => {
+			if (e.target.tagName === 'INPUT' || e.target.closest('button') || e.target.classList.contains('body-name-input')) return;
+			if (e.offsetX > bodiesContainer.clientWidth) return;
+
+			const card = e.target.closest('.body-card');
+			if (!card) return;
+
+			const sortSelect = document.getElementById('bodySortSelect');
+			if (sortSelect && sortSelect.value !== "") return;
+
+			e.preventDefault();
+			
+			dragIndex = parseInt(card.dataset.index, 10);
+			if (isNaN(dragIndex)) return;
+
+			isDragging = true;
+			startY = e.clientY;
+
+			const rect = card.getBoundingClientRect();
+			dragEl = card.cloneNode(true);
+			dragEl.classList.add('dragging');
+			Object.assign(dragEl.style, {
+				position: 'fixed',
+				zIndex: '9999',
+				width: rect.width + 'px',
+				height: rect.height + 'px',
+				left: rect.left + 'px',
+				top: rect.top + 'px',
+				pointerEvents: 'none',
+				opacity: '0.9'
+			});
+			document.body.appendChild(dragEl);
+			
+			card.style.opacity = '0.3';
+			document.body.style.cursor = 'grabbing';
+		});
+
+		window.addEventListener('mousemove', (e) => {
+			if (!isDragging || !dragEl) return;
+			e.preventDefault();
+			
+			const dy = e.clientY - startY;
+			dragEl.style.transform = `translateY(${dy}px)`;
+		});
+
+		window.addEventListener('mouseup', (e) => {
+			if (!isDragging) return;
+			
+			isDragging = false;
+			document.body.style.cursor = '';
+			
+			if (dragEl) {
+				dragEl.remove();
+				dragEl = null;
+			}
+			
+			const state = bodiesContainer.state;
+			if (!state) return;
+
+			const containerRect = bodiesContainer.getBoundingClientRect();
+			const relativeY = e.clientY - containerRect.top + bodiesContainer.scrollTop;
+			
+			let targetIndex = Math.floor(relativeY / state.itemHeight);
+			targetIndex = Math.max(0, Math.min(state.sortedBodyArray.length - 1, targetIndex));
+			
+			if (dragIndex !== -1 && dragIndex !== targetIndex) {
+				const body = state.sortedBodyArray[dragIndex];
+				state.sortedBodyArray.splice(dragIndex, 1);
+				state.sortedBodyArray.splice(targetIndex, 0, body);
+				
+				state.sortedBodyArray.forEach((b, i) => {
+					b.sortIndex = i;
+				});
+			}
+			
+			renderVirtualVisible(true);
+			dragIndex = -1;
+		});
+	};
+	
 	const constraintMap = {};
 	
 	const originalReset = Sim.reset.bind(Sim);
@@ -1077,8 +1179,11 @@ document.addEventListener('DOMContentLoaded', () => {
 			<button id="redoBtn" class="btn secondary wide-btn hidden-content" title="Redo (Ctrl+Y, Ctrl+Shift+Z)"><i class="fa-solid fa-redo"></i> Redo</button>
 		`;
 		
-		toolsPanel.querySelector('#toolsContent').appendChild(historyHeader);
-		toolsPanel.querySelector('#toolsContent').appendChild(historyContent);
+		const toolsContent = document.getElementById('toolsContent');
+		if (toolsContent) {
+			toolsContent.appendChild(historyHeader);
+			toolsContent.appendChild(historyContent);
+		}
 
 		const undoBtn = document.getElementById('undoBtn');
 		const redoBtn = document.getElementById('redoBtn');
@@ -1187,9 +1292,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		background: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff)'
 	});
 	progressBarContainer.appendChild(progressBar);
-	
-	setupDraggable(panel, header, [toolsPanel]);
-	setupDraggable(toolsPanel, toolsHeader, [panel]);
 	
 	Object.keys(Schema).forEach(key => {
 		const def = Schema[key];
@@ -1607,30 +1709,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		toggleBtn.innerHTML = panel.classList.contains('collapsed') ? '<i class="fa-solid fa-plus"></i>' : '<i class="fa-solid fa-minus"></i>';
 	});
 	
-	toggleToolsBtn.addEventListener('click', () => {
-		const willExpand = toolsPanel.classList.contains('collapsed');
-		toolsPanel.classList.toggle('collapsed');
-		
-		if (willExpand) {
-			toggleToolsBtn.innerHTML = '<i class="fa-solid fa-minus"></i>';
-			
-			if (window.innerWidth > 600) {
-				const rect = toolsPanel.getBoundingClientRect();
-				if (rect.right > window.innerWidth) {
-					if (toolsPanel.style.left) {
-						const newLeft = window.innerWidth - rect.width - 20;
-						toolsPanel.style.left = Math.max(0, newLeft) + 'px';
-					} else {
-						toolsPanel.style.right = '20px';
-						toolsPanel.style.left = 'auto';
-					}
-				}
-			}
-		} else {
-			toggleToolsBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
-		}
-	});
-
 	toggleInjBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleInjection(); });
 	
 	playBtn.addEventListener('click', () => {
@@ -1811,7 +1889,12 @@ document.addEventListener('DOMContentLoaded', () => {
 				return sortAsc ? (valA - valB) : (valB - valA);
 			});
 		} else {
-			bodyArray.sort((a,b) => a.id - b.id);
+			bodyArray.sort((a,b) => {
+				const ia = a.sortIndex !== undefined ? a.sortIndex : Number.MAX_SAFE_INTEGER;
+				const ib = b.sortIndex !== undefined ? b.sortIndex : Number.MAX_SAFE_INTEGER;
+				if (ia !== ib) return ia - ib;
+				return a.id - b.id;
+			});
 		}
 		
 		if (!bodiesContainer.state) {
@@ -2370,6 +2453,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		['fragBox', Sim, 'enableFragmentation', (c) => { if (fragParams) fragParams.classList.toggle('hidden-content', !c); }]
 	];
 	toggleCfgs.forEach(args => bindToggle(...args));
+	
+	setupBodyDragAndDrop();
+	setupDraggable(panel, header, []);
+	initTabs();
 	
 	initTooltips();
 	initBodySorting();
